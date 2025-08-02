@@ -1,0 +1,14 @@
+# Personal paths and history files
+.netrwhist
+*/.netrwhist
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Personal configuration overrides
+.personal/
+local/
+common/.gitconfig
