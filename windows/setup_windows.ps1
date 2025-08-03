@@ -256,10 +256,51 @@ function Setup-Windows {
     $targetPath = "$env:USERPROFILE\.gitconfig"
     if (Test-Path $templatePath) {
         Write-Host "Generating .gitconfig from template..." -ForegroundColor Cyan
+        
+        # Check if .gitconfig already exists
+        if (Test-Path $targetPath) {
+            Write-Host ""
+            Write-Host "An existing Git configuration was found:" -ForegroundColor Yellow
+            Write-Host "  Location: $targetPath" -ForegroundColor Yellow
+            
+            # Try to show current Git config
+            try {
+                $currentName = git config --global user.name 2>$null
+                $currentEmail = git config --global user.email 2>$null
+                if ($currentName) { Write-Host "  Current name: $currentName" -ForegroundColor Yellow }
+                if ($currentEmail) { Write-Host "  Current email: $currentEmail" -ForegroundColor Yellow }
+            } catch {
+                # Git not available or no config set
+            }
+            
+            Write-Host ""
+            $overwrite = Read-Host "Do you want to overwrite the existing .gitconfig? [y/N]"
+            if ($overwrite -notmatch "^[Yy]$") {
+                Write-Host "Keeping existing .gitconfig, skipping generation" -ForegroundColor Green
+                return
+            }
+            
+            # Backup existing file
+            $backupPath = "$targetPath.backup.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+            Copy-Item $targetPath $backupPath
+            Write-Host "Backed up existing .gitconfig to $backupPath" -ForegroundColor Cyan
+        }
+        
         $gitName = Read-Host "Enter your Git name"
         $gitEmail = Read-Host "Enter your Git email"
+        
+        # Define Windows credential helper
+        $credentialHelper = @"
+[credential]
+	helper = manager
+"@
+        
+        # Read template and replace placeholders
         $content = Get-Content $templatePath -Raw
-        $content = $content -replace "__GIT_NAME__", $gitName -replace "__GIT_EMAIL__", $gitEmail
+        $content = $content -replace "__GIT_NAME__", $gitName
+        $content = $content -replace "__GIT_EMAIL__", $gitEmail
+        $content = $content -replace "__CREDENTIAL_HELPER__", $credentialHelper
+        
         Set-Content -Path $targetPath -Value $content -Encoding UTF8
         Write-Host "SUCCESS: .gitconfig created at $targetPath" -ForegroundColor Green
     } else {

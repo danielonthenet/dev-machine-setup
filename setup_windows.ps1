@@ -394,11 +394,146 @@ echo "Please restart your terminal and run: exec zsh"
     Remove-Item $tempScript -ErrorAction SilentlyContinue
 }
 
+# Configure Git in WSL with proper credential helper
+function Set-WSLGitConfiguration {
+    Write-Log "Configuring Git in WSL..."
+    
+    # Check if WSL is available
+    try {
+        $wslTest = wsl --list --verbose 2>$null
+        if (-not $wslTest) {
+            Write-Log "WSL not available, skipping WSL Git configuration" -Level "WARN"
+            return
+        }
+    } catch {
+        Write-Log "WSL not available, skipping WSL Git configuration" -Level "WARN"
+        return
+    }
+    
+    # Get Git user details
+    $gitName = Read-Host "Enter your Git name for WSL"
+    $gitEmail = Read-Host "Enter your Git email for WSL"
+    
+    # Check if Git is already configured in WSL
+    try {
+        $wslGitName = wsl -- git config --global user.name 2>$null
+        $wslGitEmail = wsl -- git config --global user.email 2>$null
+        
+        if ($wslGitName -or $wslGitEmail) {
+            Write-Log "Existing Git configuration found in WSL:"
+            if ($wslGitName) { Write-Log "  Current name: $wslGitName" }
+            if ($wslGitEmail) { Write-Log "  Current email: $wslGitEmail" }
+            
+            $overwrite = Read-Host "Do you want to overwrite the existing WSL Git configuration? [y/N]"
+            if ($overwrite -notmatch "^[Yy]$") {
+                Write-Log "Keeping existing WSL Git configuration"
+                return
+            }
+        }
+    } catch {
+        # WSL or Git not available, continue with setup
+    }
+    
+    # Create WSL Git configuration script
+    $wslGitScript = @"
+#!/bin/bash
+echo "Configuring Git in WSL..."
+
+# Set up Git user
+git config --global user.name '$gitName'
+git config --global user.email '$gitEmail'
+
+# Set up Windows Git Credential Manager for WSL
+git config --global credential.helper '/mnt/c/Program\\ Files/Git/mingw64/bin/git-credential-manager.exe'
+
+# Set other useful Git defaults
+git config --global init.defaultBranch main
+git config --global pull.rebase false
+
+echo "Git configuration completed in WSL"
+"@
+    
+    # Write script to temp file
+    $tempScript = Join-Path $env:TEMP "wsl-git-setup.sh"
+    $wslGitScript | Out-File -FilePath $tempScript -Encoding UTF8
+    
+    # Run script in WSL
+    $tempScriptLinux = "/mnt/c/Users/$env:USERNAME/AppData/Local/Temp/wsl-git-setup.sh"
+    
+    try {
+        wsl -- bash -c "chmod +x '$tempScriptLinux' && '$tempScriptLinux'"
+        Write-Log "SUCCESS: Git configured in WSL with Windows Credential Manager"
+    } catch {
+        Write-Log "ERROR: Failed to configure Git in WSL: $($_.Exception.Message)" -Level "ERROR"
+    }
+    
+    # Clean up temp file
+    Remove-Item $tempScript -ErrorAction SilentlyContinue
+}
+
 # Set Git configuration
 function Set-GitConfiguration {
     Write-Log "Configuring Git..."
     
-    Write-Log "Skipping interactive Git configuration. Use your dotfiles for Git setup."
+    # Generate .gitconfig from template
+    $templatePath = Join-Path $SETUP_DIR "common\.gitconfig.template"
+    $targetPath = Join-Path $env:USERPROFILE ".gitconfig"
+    
+    if (Test-Path $templatePath) {
+        Write-Log "Generating .gitconfig from template..."
+        
+        # Check if .gitconfig already exists
+        if (Test-Path $targetPath) {
+            Write-Log "Existing .gitconfig found at $targetPath"
+            Write-Host ""
+            Write-Host "An existing Git configuration was found:" -ForegroundColor Yellow
+            Write-Host "  Location: $targetPath" -ForegroundColor Yellow
+            
+            # Try to show current Git config
+            try {
+                $currentName = git config --global user.name 2>$null
+                $currentEmail = git config --global user.email 2>$null
+                if ($currentName) { Write-Host "  Current name: $currentName" -ForegroundColor Yellow }
+                if ($currentEmail) { Write-Host "  Current email: $currentEmail" -ForegroundColor Yellow }
+            } catch {
+                # Git not available or no config set
+            }
+            
+            Write-Host ""
+            $overwrite = Read-Host "Do you want to overwrite the existing .gitconfig? [y/N]"
+            if ($overwrite -notmatch "^[Yy]$") {
+                Write-Log "Keeping existing .gitconfig, skipping generation"
+                return
+            }
+            
+            # Backup existing file
+            $backupPath = "$targetPath.backup.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+            Copy-Item $targetPath $backupPath
+            Write-Log "Backed up existing .gitconfig to $backupPath"
+        }
+        
+        # Get Git user details
+        $gitName = Read-Host "Enter your Git name"
+        $gitEmail = Read-Host "Enter your Git email"
+        
+        # Define Windows credential helper
+        $credentialHelper = @"
+[credential]
+	helper = manager
+"@
+        
+        # Read template and replace placeholders
+        $content = Get-Content $templatePath -Raw
+        $content = $content -replace "__GIT_NAME__", $gitName
+        $content = $content -replace "__GIT_EMAIL__", $gitEmail
+        $content = $content -replace "__CREDENTIAL_HELPER__", $credentialHelper
+        
+        # Write to user's home directory
+        Set-Content -Path $targetPath -Value $content -Encoding UTF8
+        Write-Log "SUCCESS: .gitconfig created at $targetPath with Windows credential manager"
+    } else {
+        Write-Log "ERROR: .gitconfig.template not found at $templatePath" -Level "ERROR"
+    }
 }
 
 # Main function
@@ -456,6 +591,10 @@ function Main {
             
             # Install WSL after reboot (or if skipping reboot)
             Install-WSL
+            
+            # Configure Git in WSL if WSL is available
+            Set-WSLGitConfiguration
+            
             Write-Host "Ubuntu is now installed in WSL. Please open WSL and manually set up packages, dotfiles, and your Linux environment." -ForegroundColor $Colors.Yellow
         }
         "2" {
@@ -484,6 +623,10 @@ function Main {
             }
             
             Install-WSL
+            
+            # Configure Git in WSL
+            Set-WSLGitConfiguration
+            
             Write-Host "Ubuntu is now installed in WSL. Please open WSL and manually set up packages, dotfiles, and your Linux environment." -ForegroundColor $Colors.Yellow
         }
         "4" {
@@ -515,6 +658,10 @@ function Main {
             
             if ($setupWSL -notmatch "^[Nn]$") {
                 Install-WSL
+                
+                # Configure Git in WSL
+                Set-WSLGitConfiguration
+                
                 Write-Host "Ubuntu is now installed in WSL. Please open WSL and manually set up packages, dotfiles, and your Linux environment." -ForegroundColor $Colors.Yellow
             }
         }

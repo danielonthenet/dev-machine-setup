@@ -1,67 +1,104 @@
 # Windows Package Lists for Development Machine Setup
 # PowerShell module for managing Windows application installations via Chocolatey and winget
 
-# Essential packages (always install)
-$ESSENTIAL_PACKAGES = @(
-    "7zip", 
-    "googlechrome",
-    "microsoft-windows-terminal",
-    "powershell-core",
-    "notepadplusplus"
+# =============================================================================
+# WINGET PACKAGES (preferred when available)
+# =============================================================================
+
+# Essential packages via winget
+$WINGET_ESSENTIAL = @(
+    "7zip.7zip",
+    "Google.Chrome", 
+    "Microsoft.WindowsTerminal",
+    "Microsoft.PowerShell",
+    "Notepad++.Notepad++"
 )
 
-# Development tools and environments
-$DEV_PACKAGES = @(
-    "vscode",
-    "nodejs-lts",
-    "python",
-    "golang",
-    "podman-desktop",
-    "postman",
-    "github-desktop",
-    "sourcetree",
-    "putty",
-    "openssh",
+# Development tools via winget
+$WINGET_DEV = @(
+    "Microsoft.VisualStudioCode",
+    "OpenJS.NodeJS.LTS",
+    "Python.Python.3.12",
+    "GoLang.Go",
+    "RedHat.Podman-Desktop",
+    "Postman.Postman",
+    "GitHub.GitHubDesktop",
+    "Atlassian.Sourcetree",
+    "PuTTY.PuTTY",
+    "Microsoft.OpenSSH.Beta"
+)
+
+# Communication apps via winget
+$WINGET_COMM = @(
+    "SlackTechnologies.Slack",
+    "Zoom.Zoom",
+    "Microsoft.Teams"
+)
+
+# Media applications via winget
+$WINGET_MEDIA = @(
+    "VideoLAN.VLC",
+    "Audacity.Audacity", 
+    "GIMP.GIMP",
+    "HandBrake.HandBrake",
+    "OBSProject.OBSStudio",
+    "DuongDieuPhap.ImageGlass",
+    "th-ch.YouTubeMusic"
+)
+
+# Utility applications via winget
+$WINGET_UTILITY = @(
+    "Microsoft.Sysinternals.ProcessMonitor",
+    "WinDirStat.WinDirStat",
+    "Microsoft.PowerToys",
+    "voidtools.Everything",
+    "AutoHotkey.AutoHotkey",
+    "Greenshot.Greenshot",
+    "WiresharkFoundation.Wireshark"
+)
+
+# Cloud CLI tools via winget
+$WINGET_CLOUD = @(
+    "Amazon.AWSCLI",
+    "Microsoft.AzureCLI",
+    "Hashicorp.Terraform",
+    "Kubernetes.kubectl",
+    "Helm.Helm"
+)
+
+# =============================================================================
+# CHOCOLATEY PACKAGES (fallback for packages not available on winget)
+# =============================================================================
+
+# Essential packages via chocolatey (fallbacks)
+$CHOCO_ESSENTIAL = @(
+    # Most essentials are available on winget now
+)
+
+# Development tools via chocolatey (fallbacks)
+$CHOCO_DEV = @(
     "curl",
     "wget"
 )
 
-# Communication and productivity applications
-$COMM_PACKAGES = @(
-    "slack",
-    "zoom",
-    "microsoft-teams"
+# Communication apps via chocolatey (fallbacks)  
+$CHOCO_COMM = @(
+    # Most comm apps are available on winget now
 )
 
-# Media and utility applications  
-$MEDIA_PACKAGES = @(
-    "vlc",
-    "audacity",
-    "gimp",
-    "handbrake",
-    "obs-studio",
-    "imageglass"
+# Media applications via chocolatey (fallbacks)
+$CHOCO_MEDIA = @(
+    # Most media apps are available on winget now
 )
 
-# Developer utilities
-$UTILITY_PACKAGES = @(
-    "sysinternals",
-    "windirstat",
-    "powertoys",
-    "everything",
-    "autohotkey",
-    "greenshot",
-    "wireshark",
-    "advanced-ip-scanner"
+# Utility applications via chocolatey (fallbacks)
+$CHOCO_UTILITY = @(
+    "advanced-ip-scanner"  # Not available on winget
 )
 
-# Cloud CLI tools
-$CLOUD_PACKAGES = @(
-    "awscli",
-    "azure-cli", 
-    "terraform",
-    "kubernetes-cli",
-    "helm"
+# Cloud CLI tools via chocolatey (fallbacks)
+$CHOCO_CLOUD = @(
+    # Most cloud tools are available on winget now
 )
 
 # Modern CLI tools (via scoop or direct download)
@@ -79,7 +116,7 @@ $CLI_TOOLS = @(
 function Install-EssentialPackages {
     Write-Host "Installing essential packages..." -ForegroundColor Cyan
     
-    # Install Git for Windows (includes Git Credential Manager)
+    # Install Git for Windows first (includes Git Credential Manager)
     Write-Host "Installing Git for Windows with Credential Manager..." -ForegroundColor Yellow
     try {
         # Check if already installed
@@ -110,8 +147,22 @@ function Install-EssentialPackages {
         Write-Host $_.Exception.Message -ForegroundColor Red
     }
     
-    foreach ($package in $ESSENTIAL_PACKAGES) {
-        Write-Host "Installing $package..." -ForegroundColor Yellow
+    # Install winget essential packages
+    foreach ($package in $WINGET_ESSENTIAL) {
+        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+        try {
+            winget install --id=$package -e
+            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+            Write-Host $_.Exception.Message -ForegroundColor Red
+        }
+    }
+    
+    # Install chocolatey essential packages (fallbacks)
+    foreach ($package in $CHOCO_ESSENTIAL) {
+        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
         try {
             choco install $package -y --no-progress --ignore-checksums
             Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
@@ -126,8 +177,23 @@ function Install-EssentialPackages {
 # Function to install development packages
 function Install-DevPackages {
     Write-Host "Installing development packages..." -ForegroundColor Cyan
-    foreach ($package in $DEV_PACKAGES) {
-        Write-Host "Installing $package..." -ForegroundColor Yellow
+    
+    # Install winget dev packages
+    foreach ($package in $WINGET_DEV) {
+        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+        try {
+            winget install --id=$package -e
+            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+            Write-Host $_.Exception.Message -ForegroundColor Red
+        }
+    }
+    
+    # Install chocolatey dev packages (fallbacks)
+    foreach ($package in $CHOCO_DEV) {
+        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
         try {
             choco install $package -y --no-progress --ignore-checksums
             Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
@@ -142,8 +208,23 @@ function Install-DevPackages {
 # Function to install communication packages  
 function Install-CommPackages {
     Write-Host "Installing communication packages..." -ForegroundColor Cyan
-    foreach ($package in $COMM_PACKAGES) {
-        Write-Host "Installing $package..." -ForegroundColor Yellow
+    
+    # Install winget comm packages
+    foreach ($package in $WINGET_COMM) {
+        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+        try {
+            winget install --id=$package -e
+            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+            Write-Host $_.Exception.Message -ForegroundColor Red
+        }
+    }
+    
+    # Install chocolatey comm packages (fallbacks)
+    foreach ($package in $CHOCO_COMM) {
+        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
         try {
             choco install $package -y --no-progress --ignore-checksums
             Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
@@ -158,8 +239,23 @@ function Install-CommPackages {
 # Function to install media packages
 function Install-MediaPackages {
     Write-Host "Installing media packages..." -ForegroundColor Cyan
-    foreach ($package in $MEDIA_PACKAGES) {
-        Write-Host "Installing $package..." -ForegroundColor Yellow
+    
+    # Install winget media packages
+    foreach ($package in $WINGET_MEDIA) {
+        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+        try {
+            winget install --id=$package -e
+            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+            Write-Host $_.Exception.Message -ForegroundColor Red
+        }
+    }
+    
+    # Install chocolatey media packages (fallbacks)
+    foreach ($package in $CHOCO_MEDIA) {
+        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
         try {
             choco install $package -y --no-progress --ignore-checksums
             Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
@@ -174,8 +270,23 @@ function Install-MediaPackages {
 # Function to install utility packages
 function Install-UtilityPackages {
     Write-Host "Installing utility packages..." -ForegroundColor Cyan
-    foreach ($package in $UTILITY_PACKAGES) {
-        Write-Host "Installing $package..." -ForegroundColor Yellow
+    
+    # Install winget utility packages
+    foreach ($package in $WINGET_UTILITY) {
+        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+        try {
+            winget install --id=$package -e
+            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+            Write-Host $_.Exception.Message -ForegroundColor Red
+        }
+    }
+    
+    # Install chocolatey utility packages (fallbacks)
+    foreach ($package in $CHOCO_UTILITY) {
+        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
         try {
             choco install $package -y --no-progress --ignore-checksums
             Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
@@ -190,8 +301,23 @@ function Install-UtilityPackages {
 # Function to install cloud packages
 function Install-CloudPackages {
     Write-Host "Installing cloud CLI tools..." -ForegroundColor Cyan
-    foreach ($package in $CLOUD_PACKAGES) {
-        Write-Host "Installing $package..." -ForegroundColor Yellow
+    
+    # Install winget cloud packages
+    foreach ($package in $WINGET_CLOUD) {
+        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+        try {
+            winget install --id=$package -e
+            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+            Write-Host $_.Exception.Message -ForegroundColor Red
+        }
+    }
+    
+    # Install chocolatey cloud packages (fallbacks)
+    foreach ($package in $CHOCO_CLOUD) {
+        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
         try {
             choco install $package -y --no-progress --ignore-checksums
             Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
