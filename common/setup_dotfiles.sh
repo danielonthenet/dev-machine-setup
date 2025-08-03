@@ -127,8 +127,7 @@ backup_existing_files() {
         fi
     }
 
-    # Common config files to backup
-    backup_if_exists "$HOME/.gitconfig"
+    # Common config files to backup (excluding .gitconfig which is handled in generate_gitconfig)
     backup_if_exists "$HOME/.gitignore_global" 
     backup_if_exists "$HOME/.vimrc"
     backup_if_exists "$HOME/.zshrc"
@@ -166,8 +165,7 @@ create_symlinks() {
         dotfiles_log "🔗 Created symlink: $target -> $source"
     }
 
-    # Create symlinks for common dotfiles
-    create_symlink "$DOTFILES_COMMON_DIR/.gitconfig" "$HOME/.gitconfig"
+    # Create symlinks for common dotfiles (excluding .gitconfig which is generated from template)
     create_symlink "$DOTFILES_COMMON_DIR/.gitignore_global" "$HOME/.gitignore_global"
     create_symlink "$DOTFILES_COMMON_DIR/.vimrc" "$HOME/.vimrc"
     create_symlink "$DOTFILES_COMMON_DIR/.p10k.zsh" "$HOME/.p10k.zsh"
@@ -180,6 +178,93 @@ create_symlinks() {
     fi
     
     dotfiles_log "✅ Symlinks created successfully"
+}
+
+# =============================================================================
+# Git Configuration Generation
+# =============================================================================
+
+generate_gitconfig() {
+    dotfiles_log "📝 Generating platform-specific .gitconfig..."
+    
+    local template_path="$DOTFILES_COMMON_DIR/.gitconfig.template"
+    local target_path="$HOME/.gitconfig"
+    
+    if [[ ! -f "$template_path" ]]; then
+        dotfiles_log "⚠️  Template not found: $template_path, skipping .gitconfig generation."
+        return
+    fi
+    
+    # Check if .gitconfig already exists
+    if [[ -f "$target_path" ]]; then
+        dotfiles_log "📋 Existing .gitconfig found at $target_path"
+        echo ""
+        echo "An existing Git configuration was found:"
+        echo "  Location: $target_path"
+        if command -v git &> /dev/null; then
+            local existing_name existing_email
+            existing_name=$(git config --global user.name 2>/dev/null || echo "Not set")
+            existing_email=$(git config --global user.email 2>/dev/null || echo "Not set")
+            echo "  Current name: $existing_name"
+            echo "  Current email: $existing_email"
+        fi
+        echo ""
+        read -p "Do you want to overwrite the existing .gitconfig? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            dotfiles_log "✅ Keeping existing .gitconfig, skipping generation"
+            return
+        fi
+        
+        # Backup existing file
+        local backup_path="${target_path}.backup.$(date +%Y%m%d_%H%M%S)"
+        cp "$target_path" "$backup_path"
+        dotfiles_log "📦 Backed up existing .gitconfig to $backup_path"
+    fi
+    
+    # Determine credential helper based on platform
+    local credential_helper=""
+    if [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
+        # Running in WSL
+        credential_helper="[credential]
+  helper = /mnt/c/Program\\\\ Files/Git/mingw64/bin/git-credential-manager.exe"
+        dotfiles_log "🐧 Detected WSL environment, using Windows Git Credential Manager"
+    elif [[ "$DOTFILES_OS" == "macos" ]]; then
+        # Running on macOS
+        credential_helper="[credential]
+  helper = osxkeychain"
+        dotfiles_log "🍎 Detected macOS environment, using osxkeychain"
+    elif [[ "$DOTFILES_OS" == "windows" ]]; then
+        # Running on Windows
+        credential_helper="[credential]
+	helper = manager"
+        dotfiles_log "🪟 Detected Windows environment, using Git Credential Manager"
+    elif [[ "$DOTFILES_OS" == "linux" ]]; then
+        # Running on native Linux - use WSL credential helper as fallback
+        credential_helper="[credential]
+  helper = /mnt/c/Program\\\\ Files/Git/mingw64/bin/git-credential-manager.exe"
+        dotfiles_log "🐧 Detected Linux environment, using Windows Git Credential Manager (fallback)"
+    else
+        # Fallback - no credential helper
+        credential_helper="# No credential helper configured for this platform"
+        dotfiles_log "❓ Unknown environment, no credential helper configured"
+    fi
+    
+    # Prompt for Git user details
+    local git_name git_email
+    read -p "Enter your Git name: " git_name
+    read -p "Enter your Git email: " git_email
+    
+    # Read template and replace placeholders
+    local content
+    content=$(cat "$template_path")
+    content="${content//__GIT_NAME__/$git_name}"
+    content="${content//__GIT_EMAIL__/$git_email}"
+    content="${content//__CREDENTIAL_HELPER__/$credential_helper}"
+    
+    # Write to ~/.gitconfig
+    echo "$content" > "$target_path"
+    dotfiles_log "✅ .gitconfig created at $target_path with platform-specific credential helper"
 }
 
 # =============================================================================
@@ -315,21 +400,8 @@ install_dotfiles() {
     create_symlinks
     setup_development_environment
 
-    # Generate ~/.gitconfig from template if available
-    local template_path="$DOTFILES_COMMON_DIR/.gitconfig.template"
-    local target_path="$HOME/.gitconfig"
-    if [[ -f "$template_path" ]]; then
-        dotfiles_log "📝 Generating .gitconfig from template..."
-        # Prompt for name/email
-        local git_name git_email
-        read -p "Enter your Git name: " git_name
-        read -p "Enter your Git email: " git_email
-        # Replace placeholders and write to ~/.gitconfig
-        sed "s/__GIT_NAME__/$git_name/;s/__GIT_EMAIL__/$git_email/" "$template_path" > "$target_path"
-        dotfiles_log "✅ .gitconfig created at $target_path"
-    else
-        dotfiles_log "⚠️  .gitconfig.template not found, skipping .gitconfig generation."
-    fi
+    # Generate ~/.gitconfig from platform-specific template
+    generate_gitconfig
 
     dotfiles_log "✅ Dotfiles installation complete!"
 

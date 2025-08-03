@@ -364,20 +364,7 @@ final_setup() {
     mkdir -p "$HOME/Projects"
     mkdir -p "$HOME/Scripts"
     
-    # Set up Git configuration prompt
-    if ! git config --global user.name &> /dev/null; then
-        echo
-        echo "🔧 Git Configuration"
-        read -p "Enter your Git username: " git_username
-        read -p "Enter your Git email: " git_email
-        
-        git config --global user.name "$git_username"
-        git config --global user.email "$git_email"
-        git config --global init.defaultBranch main
-        git config --global pull.rebase false
-        
-        log_success "Git configuration complete"
-    fi
+    # Git configuration will be handled by the dotfiles setup using platform-specific templates
     
     log_success "Final setup complete"
 }
