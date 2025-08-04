@@ -2,6 +2,34 @@
 # PowerShell module for managing Windows application installations via Chocolatey and winget
 
 # =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+# Function to check if a winget package is installed
+function Test-WingetPackageInstalled {
+    param([string]$PackageId)
+    try {
+        $result = winget list --id $PackageId -e 2>$null
+        return ($result -and $result -match $PackageId)
+    }
+    catch {
+        return $false
+    }
+}
+
+# Function to check if a chocolatey package is installed
+function Test-ChocoPackageInstalled {
+    param([string]$PackageName)
+    try {
+        $result = choco list --local-only $PackageName --exact 2>$null
+        return ($result -and $result -match $PackageName -and $result -notmatch "0 packages installed")
+    }
+    catch {
+        return $false
+    }
+}
+
+# =============================================================================
 # WINGET PACKAGES (preferred when available)
 # =============================================================================
 
@@ -11,7 +39,8 @@ $WINGET_ESSENTIAL = @(
     "Google.Chrome", 
     "Microsoft.WindowsTerminal",
     "Microsoft.PowerShell",
-    "Notepad++.Notepad++"
+    "Notepad++.Notepad++",
+    "Joplin.Joplin"
 )
 
 # Development tools via winget
@@ -23,7 +52,6 @@ $WINGET_DEV = @(
     "RedHat.Podman-Desktop",
     "Postman.Postman",
     "GitHub.GitHubDesktop",
-    "Atlassian.Sourcetree",
     "PuTTY.PuTTY",
     "Microsoft.OpenSSH.Beta"
 )
@@ -101,13 +129,16 @@ $CHOCO_CLOUD = @(
     # Most cloud tools are available on winget now
 )
 
-# Modern CLI tools (via scoop or direct download)
-$CLI_TOOLS = @(
-    "bat",
-    "ripgrep", 
-    "fd",
-    "fzf",
-    "jq",
+# Modern CLI tools (via winget and chocolatey)
+$CLI_TOOLS_WINGET = @{
+    "bat" = "sharkdp.bat"
+    "ripgrep" = "BurntSushi.ripgrep.MSVC"
+    "fd" = "sharkdp.fd"
+    "fzf" = "junegunn.fzf"
+    "jq" = "jqlang.jq"
+}
+
+$CLI_TOOLS_CHOCO = @(
     "yq",
     "httpie"
 )
@@ -119,15 +150,11 @@ function Install-EssentialPackages {
     # Install Git for Windows first (includes Git Credential Manager)
     Write-Host "Installing Git for Windows with Credential Manager..." -ForegroundColor Yellow
     try {
-        # Check if already installed
-        $gitInstalled = winget list --id Git.Git -e 2>$null
-        if ($gitInstalled -and $gitInstalled -match "Git.Git") {
+        if (Test-WingetPackageInstalled "Git.Git") {
             Write-Host "Git for Windows is already installed" -ForegroundColor Yellow
         } else {
-            winget install --id=Git.Git -e
-            # Validate installation
-            $gitValidation = winget list --id Git.Git -e 2>$null
-            if ($gitValidation -and $gitValidation -match "Git.Git") {
+            winget install --id=Git.Git -e --accept-source-agreements --accept-package-agreements
+            if (Test-WingetPackageInstalled "Git.Git") {
                 Write-Host "SUCCESS: Git for Windows installed successfully" -ForegroundColor Green
                 
                 # Verify Git Credential Manager is included
@@ -149,27 +176,35 @@ function Install-EssentialPackages {
     
     # Install winget essential packages
     foreach ($package in $WINGET_ESSENTIAL) {
-        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
-        try {
-            winget install --id=$package -e
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-WingetPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+            try {
+                winget install --id=$package -e --accept-source-agreements --accept-package-agreements
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
     
     # Install chocolatey essential packages (fallbacks)
     foreach ($package in $CHOCO_ESSENTIAL) {
-        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
-        try {
-            choco install $package -y --no-progress --ignore-checksums
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-ChocoPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
+            try {
+                choco install $package -y --no-progress --ignore-checksums
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
 }
@@ -180,27 +215,35 @@ function Install-DevPackages {
     
     # Install winget dev packages
     foreach ($package in $WINGET_DEV) {
-        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
-        try {
-            winget install --id=$package -e
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-WingetPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+            try {
+                winget install --id=$package -e --accept-source-agreements --accept-package-agreements
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
     
     # Install chocolatey dev packages (fallbacks)
     foreach ($package in $CHOCO_DEV) {
-        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
-        try {
-            choco install $package -y --no-progress --ignore-checksums
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-ChocoPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
+            try {
+                choco install $package -y --no-progress --ignore-checksums
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
 }
@@ -211,27 +254,35 @@ function Install-CommPackages {
     
     # Install winget comm packages
     foreach ($package in $WINGET_COMM) {
-        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
-        try {
-            winget install --id=$package -e
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-WingetPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+            try {
+                winget install --id=$package -e --accept-source-agreements --accept-package-agreements
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
     
     # Install chocolatey comm packages (fallbacks)
     foreach ($package in $CHOCO_COMM) {
-        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
-        try {
-            choco install $package -y --no-progress --ignore-checksums
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-ChocoPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
+            try {
+                choco install $package -y --no-progress --ignore-checksums
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
 }
@@ -242,27 +293,35 @@ function Install-MediaPackages {
     
     # Install winget media packages
     foreach ($package in $WINGET_MEDIA) {
-        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
-        try {
-            winget install --id=$package -e
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-WingetPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+            try {
+                winget install --id=$package -e --accept-source-agreements --accept-package-agreements
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
     
     # Install chocolatey media packages (fallbacks)
     foreach ($package in $CHOCO_MEDIA) {
-        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
-        try {
-            choco install $package -y --no-progress --ignore-checksums
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-ChocoPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
+            try {
+                choco install $package -y --no-progress --ignore-checksums
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
 }
@@ -273,27 +332,35 @@ function Install-UtilityPackages {
     
     # Install winget utility packages
     foreach ($package in $WINGET_UTILITY) {
-        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
-        try {
-            winget install --id=$package -e
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-WingetPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+            try {
+                winget install --id=$package -e --accept-source-agreements --accept-package-agreements
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
     
     # Install chocolatey utility packages (fallbacks)
     foreach ($package in $CHOCO_UTILITY) {
-        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
-        try {
-            choco install $package -y --no-progress --ignore-checksums
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-ChocoPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
+            try {
+                choco install $package -y --no-progress --ignore-checksums
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
 }
@@ -304,55 +371,74 @@ function Install-CloudPackages {
     
     # Install winget cloud packages
     foreach ($package in $WINGET_CLOUD) {
-        Write-Host "Installing $package via winget..." -ForegroundColor Yellow
-        try {
-            winget install --id=$package -e
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-WingetPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+            try {
+                winget install --id=$package -e --accept-source-agreements --accept-package-agreements
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
     
     # Install chocolatey cloud packages (fallbacks)
     foreach ($package in $CHOCO_CLOUD) {
-        Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
-        try {
-            choco install $package -y --no-progress --ignore-checksums
-            Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+        if (Test-ChocoPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
+            try {
+                choco install $package -y --no-progress --ignore-checksums
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
 }
 
-# Function to install modern CLI tools via Scoop
+# Function to install modern CLI tools
 function Install-CLITools {
-    Write-Host "Installing modern CLI tools via Scoop..." -ForegroundColor Cyan
+    Write-Host "Installing modern CLI tools..." -ForegroundColor Cyan
     
-    # Install Scoop if not present
-    if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
-        Write-Host "Installing Scoop package manager..." -ForegroundColor Yellow
-        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-        Invoke-RestMethod get.scoop.sh | Invoke-Expression
-        
-        # Add buckets
-        scoop bucket add extras
-        scoop bucket add main
+    # Install CLI tools via winget
+    foreach ($tool in $CLI_TOOLS_WINGET.GetEnumerator()) {
+        if (Test-WingetPackageInstalled $tool.Value) {
+            Write-Host "$($tool.Key) is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $($tool.Key) via winget..." -ForegroundColor Yellow
+            try {
+                winget install --id=$($tool.Value) -e --accept-source-agreements --accept-package-agreements
+                Write-Host "SUCCESS: $($tool.Key) installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $($tool.Key)" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
+        }
     }
     
-    foreach ($tool in $CLI_TOOLS) {
-        Write-Host "Installing $tool..." -ForegroundColor Yellow
-        try {
-            scoop install $tool
-            Write-Host "SUCCESS: $tool installed successfully" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "ERROR: Failed to install $tool" -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
+    # Install remaining CLI tools via chocolatey
+    foreach ($tool in $CLI_TOOLS_CHOCO) {
+        if (Test-ChocoPackageInstalled $tool) {
+            Write-Host "$tool is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $tool via chocolatey..." -ForegroundColor Yellow
+            try {
+                choco install $tool -y --no-progress --ignore-checksums
+                Write-Host "SUCCESS: $tool installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $tool" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
         }
     }
 }

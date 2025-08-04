@@ -138,11 +138,23 @@ function Install-Chocolatey {
 function Install-WindowsPackages {
     Write-Log "Installing Windows packages..."
     
+    # Check if Install-InteractivePackages is available, if not, reload packages
+    if (-not (Get-Command Install-InteractivePackages -ErrorAction SilentlyContinue)) {
+        Write-Log "Install-InteractivePackages function not found, attempting to reload packages module..."
+        $packagesPath = Join-Path $SETUP_DIR "windows\packages.ps1"
+        if (Test-Path $packagesPath) {
+            . $packagesPath
+            Write-Log "Packages module reloaded"
+        }
+    }
+    
     # Use the modular packages from windows/packages.ps1
     if (Get-Command Install-InteractivePackages -ErrorAction SilentlyContinue) {
         Install-InteractivePackages
     } else {
         Write-Host "WARNING: Install-InteractivePackages function not found. Skipping Windows package installation." -ForegroundColor Yellow
+        Write-Log "Available functions:" 
+        Get-Command | Where-Object { $_.Name -like "*Install*" } | ForEach-Object { Write-Log "  - $($_.Name)" }
     }
 }
 

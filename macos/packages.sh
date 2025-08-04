@@ -58,6 +58,7 @@ ESSENTIAL_CASK_APPS=(
     "firefox"
     "rectangle"
     "the-unarchiver"
+    "joplin"
 )
 
 # Development GUI Applications
@@ -66,7 +67,6 @@ DEV_CASK_APPS=(
     "postman"
     "dbeaver-community"
     "github-desktop"
-    "sourcetree"
     "wireshark"
 )
 
@@ -79,21 +79,11 @@ COMM_CASK_APPS=(
 # Optional Applications (install selectively)
 OPTIONAL_CASK_APPS=(
     "brave-browser"
-    "1password"
-    "alfred"
-    "cleanmymac"
-    "appcleaner"
     "karabiner-elements"
     "bartender"
     "stats"
     "handbrake"
     "vlc"
-    "mongodb-compass"
-    "cyberduck"
-    "transmission"
-    "imageoptim"
-    "sketch"
-    "adobe-creative-cloud"
 )
 
 # Fonts
