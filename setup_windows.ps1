@@ -45,6 +45,35 @@ function Show-Welcome {
     Write-Host ""
 }
 
+# Prompt to setup macOS-style keyboard shortcuts (Kinto)
+function Setup-MacOSShortcuts {
+    Write-Host ""
+    Write-Host "Would you like to setup macOS-style keyboard shortcuts on Windows using Kinto?" -ForegroundColor $Colors.Yellow
+    $response = Read-Host "Type 'y' to install, or any other key to skip"
+    if ($response -match '^[Yy]$') {
+        Write-Log "User opted to install Kinto for macOS-style shortcuts"
+        Write-Host "Downloading and running official Kinto install script..." -ForegroundColor $Colors.Blue
+        try {
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/rbreaves/kinto/master/install/windows.ps1" -UseBasicParsing).Content
+            Write-Log "Kinto installation script executed"
+            Write-Host "Kinto installation complete. You may need to log out and back in for shortcuts to take effect." -ForegroundColor $Colors.Green
+            $showIcon = Read-Host "Show Kinto icon in system tray at all times? [y/N]"
+            if ($showIcon -match '^[Yy]$') {
+                Write-Host "Updating system tray to show Kinto icon..." -ForegroundColor $Colors.Blue
+                cmd /c "explorer shell:::{05d7b0f4-2121-4eff-bf6b-ed3f69b894d9}"
+                Write-Log "System tray updated for Kinto icon"
+            }
+        } catch {
+            Write-Log "ERROR: Failed to run Kinto install script: $($_.Exception.Message)" -Level "ERROR"
+            Write-Host "ERROR: Could not install Kinto. Please install manually from https://github.com/rbreaves/kinto" -ForegroundColor $Colors.Red
+        }
+    } else {
+        Write-Log "User skipped Kinto installation"
+        Write-Host "Skipping macOS-style keyboard shortcut setup." -ForegroundColor $Colors.Yellow
+    }
+}
+
 # Check if running as Administrator
 function Test-Administrator {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -156,6 +185,7 @@ function Install-WindowsPackages {
         Write-Log "Available functions:" 
         Get-Command | Where-Object { $_.Name -like "*Install*" } | ForEach-Object { Write-Log "  - $($_.Name)" }
     }
+
 }
 
 # Enable Windows features for development
@@ -531,7 +561,7 @@ function Set-GitConfiguration {
         # Define Windows credential helper
         $credentialHelper = @"
 [credential]
-	helper = manager
+    helper = manager
 "@
         
         # Read template and replace placeholders
@@ -576,9 +606,9 @@ function Main {
     Write-Host "3) WSL/Ubuntu setup only"
     Write-Host "4) Custom setup (choose components)"
     Write-Host "5) Exit"
+    Write-Host "6) Setup macOS-style keyboard shortcuts (Kinto) only"
     Write-Host ""
-    
-    $choice = Read-Host "Choose an option [1-5]"
+    $choice = Read-Host "Choose an option [1-6]"
     
     switch ($choice) {
         "1" {
@@ -587,12 +617,10 @@ function Main {
             Install-WindowsPackages
             $rebootNeeded = Enable-WindowsFeatures
             Set-GitConfiguration
-            
             # Setup Windows-specific configuration
             if (Get-Command Setup-Windows -ErrorAction SilentlyContinue) {
                 Setup-Windows
             }
-            
             if ($rebootNeeded -and -not $SkipReboot) {
                 $reboot = Read-Host "Reboot required for WSL. Reboot now? [Y/n]"
                 if ($reboot -notmatch "^[Nn]$") {
@@ -600,31 +628,27 @@ function Main {
                     Restart-Computer -Force
                 }
             }
-            
             # Install WSL after reboot (or if skipping reboot)
             Install-WSL
-            
             # Configure Git in WSL if WSL is available
             Set-WSLGitConfiguration
-            
             Write-Host "Ubuntu is now installed in WSL. Please open WSL and manually set up packages, dotfiles, and your Linux environment." -ForegroundColor $Colors.Yellow
+            # Run Kinto setup automatically as part of full setup
+            Setup-MacOSShortcuts
         }
         "2" {
             Write-Log "Windows packages-only setup selected"
             Install-Chocolatey
             Install-WindowsPackages
-            
             # Setup Windows-specific configuration
             if (Get-Command Setup-Windows -ErrorAction SilentlyContinue) {
                 Setup-Windows
             }
-            
             Set-GitConfiguration
         }
         "3" {
             Write-Log "WSL/Ubuntu setup selected"
             $rebootNeeded = Enable-WindowsFeatures
-            
             if ($rebootNeeded -and -not $SkipReboot) {
                 $reboot = Read-Host "Reboot required for WSL. Reboot now? [Y/n]"
                 if ($reboot -notmatch "^[Nn]$") {
@@ -633,53 +657,46 @@ function Main {
                     return
                 }
             }
-            
             Install-WSL
-            
             # Configure Git in WSL
             Set-WSLGitConfiguration
-            
             Write-Host "Ubuntu is now installed in WSL. Please open WSL and manually set up packages, dotfiles, and your Linux environment." -ForegroundColor $Colors.Yellow
         }
         "4" {
             Write-Host ""
             Write-Host "Custom Setup - Select components:" -ForegroundColor $Colors.Yellow
-            
             $installChoco = Read-Host "Install Chocolatey and Windows packages? [Y/n]"
             $enableFeatures = Read-Host "Enable Windows features (WSL, Hyper-V)? [Y/n]"
             $setupWindows = Read-Host "Configure Windows environment? [Y/n]"
             $setupWSL = Read-Host "Setup WSL2 and Ubuntu? [Y/n]"
             $configGit = Read-Host "Configure Git? [Y/n]"
-            
             if ($installChoco -notmatch "^[Nn]$") {
                 Install-Chocolatey
                 Install-WindowsPackages
             }
-            
             if ($enableFeatures -notmatch "^[Nn]$") {
                 $rebootNeeded = Enable-WindowsFeatures
             }
-            
             if ($setupWindows -notmatch "^[Nn]$" -and (Get-Command Setup-Windows -ErrorAction SilentlyContinue)) {
                 Setup-Windows
             }
-            
             if ($configGit -notmatch "^[Nn]$") {
                 Set-GitConfiguration
             }
-            
             if ($setupWSL -notmatch "^[Nn]$") {
                 Install-WSL
-                
                 # Configure Git in WSL
                 Set-WSLGitConfiguration
-                
                 Write-Host "Ubuntu is now installed in WSL. Please open WSL and manually set up packages, dotfiles, and your Linux environment." -ForegroundColor $Colors.Yellow
             }
         }
         "5" {
             Write-Log "Setup cancelled by user"
             exit 0
+        }
+        "6" {
+            Write-Log "User selected macOS-style keyboard shortcuts (Kinto) setup only"
+            Setup-MacOSShortcuts
         }
         default {
             Write-Host "Invalid option" -ForegroundColor $Colors.Red

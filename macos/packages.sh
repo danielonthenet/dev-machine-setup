@@ -59,6 +59,7 @@ ESSENTIAL_CASK_APPS=(
     "rectangle"
     "the-unarchiver"
     "joplin"
+    "google-drive"
 )
 
 # Development GUI Applications

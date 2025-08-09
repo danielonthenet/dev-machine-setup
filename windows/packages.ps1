@@ -101,6 +101,7 @@ $WINGET_CLOUD = @(
 # Essential packages via chocolatey (fallbacks)
 $CHOCO_ESSENTIAL = @(
     # Most essentials are available on winget now
+    "googledrive"
 )
 
 # Development tools via chocolatey (fallbacks)

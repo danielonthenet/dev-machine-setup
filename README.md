@@ -73,6 +73,46 @@ update-system        # Update packages
 reload               # Reload shell config
 ```
 
+
+
+## macOS-Style Shortcut Keys (Kinto)
+
+When you enable macOS-style keyboard shortcuts with Kinto, you get familiar macOS key mappings on Windows:
+
+| Shortcut           | Action                        |
+|--------------------|-------------------------------|
+| Cmd+C              | Copy                          |
+| Cmd+V              | Paste                         |
+| Cmd+X              | Cut                           |
+| Cmd+Z              | Undo                          |
+| Cmd+Shift+Z        | Redo                          |
+| Cmd+A              | Select All                    |
+| Cmd+F              | Find                          |
+| Cmd+S              | Save                          |
+| Cmd+Q              | Quit/Close Window             |
+| Cmd+W              | Close Tab/Window              |
+| Cmd+Tab            | Switch Applications           |
+| Cmd+`              | Switch Windows (same app)     |
+| Cmd+Space          | Search/Spotlight              |
+| Cmd+Shift+3        | Screenshot (full screen)      |
+| Cmd+Shift+4        | Screenshot (selection)        |
+| Cmd+Shift+N        | New Folder (Explorer/Finder)  |
+| Cmd+Shift+T        | Reopen Closed Tab             |
+| Cmd+Left/Right     | Jump to Line Start/End        |
+| Cmd+Up/Down        | Jump to Document Start/End    |
+| Cmd+Backspace      | Delete Line                   |
+| Cmd+L              | Focus Address Bar (Browser)   |
+| Cmd+R              | Refresh/Reload                |
+| Cmd+T              | New Tab                       |
+| Cmd+N              | New Window                    |
+| Cmd+O              | Open File                     |
+| Cmd+P              | Print                         |
+| Cmd+E              | Search in File/Folder         |
+| Cmd+D              | Bookmark/Add to Favorites     |
+| Cmd+Shift+Delete   | Empty Trash/Clear History     |
+
+These shortcuts work across most Windows applications, browsers, and editors, making it easier for Mac users to transition and maintain productivity. Some shortcuts may depend on the application and Kinto's configuration.
+
 For complete command reference, see [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
 
 ## Manual Installation
