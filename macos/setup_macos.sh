@@ -120,8 +120,8 @@ fi
 # Dotfiles setup (including .gitconfig generation)
 if [[ -f "$DOTFILES_DIR/common/setup_dotfiles.sh" ]]; then
     echo "📝 Running dotfiles setup..."
-    source "$DOTFILES_DIR/common/setup_dotfiles.sh"
-    install_dotfiles
+    chmod +x "$DOTFILES_DIR/common/setup_dotfiles.sh"
+    "$DOTFILES_DIR/common/setup_dotfiles.sh" install
 fi
 
 echo "✅ macOS setup complete!"

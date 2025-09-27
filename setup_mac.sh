@@ -126,6 +126,8 @@ install_packages() {
     if [[ -f "$SETUP_DIR/macos/setup_macos.sh" ]]; then
         echo -e "${BLUE}Running macOS-specific setup...${NC}"
         chmod +x "$SETUP_DIR/macos/setup_macos.sh"
+        # Export DOTFILES_DIR for the macOS setup script
+        export DOTFILES_DIR="$SETUP_DIR"
         source "$SETUP_DIR/macos/setup_macos.sh"
     else
         log "⚠️  macOS setup script not found, continuing with basic setup"
@@ -138,11 +140,10 @@ setup_dotfiles() {
     
     echo -e "${BLUE}Configuring shell and development tools...${NC}"
     
-    # Source the shared dotfiles library
+    # Execute the dotfiles setup script
     if [[ -f "$SETUP_DIR/common/setup_dotfiles.sh" ]]; then
-        source "$SETUP_DIR/common/setup_dotfiles.sh"
-        # Call the installation function
-        install_dotfiles
+        chmod +x "$SETUP_DIR/common/setup_dotfiles.sh"
+        "$SETUP_DIR/common/setup_dotfiles.sh" install
     else
         log "❌ Shared dotfiles library not found"
         return 1

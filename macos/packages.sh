@@ -60,6 +60,7 @@ ESSENTIAL_CASK_APPS=(
     "the-unarchiver"
     "joplin"
     "google-drive"
+    "itsycal"
 )
 
 # Development GUI Applications
@@ -74,7 +75,7 @@ DEV_CASK_APPS=(
 # Communication & Productivity Applications
 COMM_CASK_APPS=(
     "slack"
-    "zoom"
+    # "zoom"
 )
 
 # Optional Applications (install selectively)

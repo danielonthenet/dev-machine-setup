@@ -128,6 +128,14 @@ json-pretty         # Format JSON from clipboard
 dotfiles-health      # Comprehensive health check
 dotfiles-quick-check # Quick validation
 
+# Dotfiles management
+dotfiles-update      # Update dotfiles from repository
+dotfiles-backup      # Backup current configuration
+dotfiles-status      # Check git status of dotfiles
+./common/setup_dotfiles.sh           # Reinstall dotfiles
+./common/setup_dotfiles.sh validate  # Validate installation
+./common/setup_dotfiles.sh backup    # Backup existing files
+
 # Updates  
 update-system        # Update system packages
 update-version-managers # Update all version managers
