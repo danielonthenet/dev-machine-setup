@@ -15,8 +15,9 @@
 # - validate_dotfiles()           - Validates dotfiles installation
 #
 # Usage:
-#   source common/setup_dotfiles.sh
-#   install_dotfiles
+#   ./common/setup_dotfiles.sh [options]
+#   Or call specific functions by sourcing:
+#   source common/setup_dotfiles.sh && install_dotfiles
 #
 # =============================================================================
 
@@ -422,6 +423,66 @@ install_dotfiles() {
     echo "   - Run 'dotfiles-health' to check system health"
     echo ""
 }
+
+# =============================================================================
+# Main Execution
+# =============================================================================
+
+main() {
+    case "${1:-install}" in
+        "install"|"")
+            install_dotfiles
+            ;;
+        "validate")
+            setup_dotfiles_environment
+            validate_dotfiles
+            ;;
+        "backup")
+            setup_dotfiles_environment
+            backup_existing_files
+            ;;
+        "--help"|"-h"|"help")
+            show_help
+            ;;
+        *)
+            echo "❌ Unknown command: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+}
+
+show_help() {
+    cat << EOF
+Dotfiles Setup Script
+
+Usage: $0 [COMMAND]
+
+Commands:
+    install     Install dotfiles (default if no command specified)
+    validate    Validate existing dotfiles installation  
+    backup      Backup existing configuration files
+    help        Show this help message
+
+Examples:
+    $0                    # Install dotfiles
+    $0 install           # Install dotfiles  
+    $0 validate          # Validate installation
+    $0 backup            # Backup existing files
+
+This script can also be sourced to use individual functions:
+    source $0 && install_dotfiles
+EOF
+}
+
+# =============================================================================
+# Script Execution - Only run main if script is executed directly
+# =============================================================================
+
+# Check if script is being executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
 
 # =============================================================================
 # Exported Functions

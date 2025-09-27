@@ -114,7 +114,7 @@ alias validate-versions='./common/validate_version_managers.sh'
 alias check-versions='show-versions'
 
 # Dotfiles management
-alias dotfiles-update='cd $DOTFILES_DIR && git pull && source common/setup_dotfiles.sh && install_dotfiles'
+alias dotfiles-update='cd $DOTFILES_DIR && git pull && ./common/setup_dotfiles.sh install'
 alias dotfiles-backup='cp ~/.zshrc ~/.zshrc.backup.$(date +%Y%m%d)'
 alias dotfiles-status='cd $DOTFILES_DIR && git status'
 alias dotfiles-health='dotfiles-health'

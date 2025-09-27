@@ -291,8 +291,8 @@ setup_dotfiles() {
     # Run the dotfiles installation using shared library
     cd "$DOTFILES_DIR"
     if [[ -f "common/setup_dotfiles.sh" ]]; then
-        source "common/setup_dotfiles.sh"
-        install_dotfiles
+        chmod +x "common/setup_dotfiles.sh"
+        "./common/setup_dotfiles.sh" install
     else
         error_exit "Shared dotfiles library not found: common/setup_dotfiles.sh"
     fi
