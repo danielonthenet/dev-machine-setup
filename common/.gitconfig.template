@@ -2,4 +2,16 @@
 	name = __GIT_NAME__
 	email = __GIT_EMAIL__
 
-__CREDENTIAL_HELPER__
+[credential]
+	helper = __CREDENTIAL_HELPER__
+[credential "https://dev.azure.com"]
+	useHttpPath = true
+[http]
+	sslcainfo = __SSL_CA_INFO_PATH__
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[core]
+	excludesfile = ~/.gitignore_global

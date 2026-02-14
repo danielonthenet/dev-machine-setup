@@ -26,4 +26,8 @@ scratch/
 .idea
 
 # Own prefix
+localonly-*
+localonly-*.*
 temp-ignore-*
+*/.claude/settings.json
+.claude/

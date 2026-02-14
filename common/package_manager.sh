@@ -17,7 +17,7 @@ install_dev_packages() {
     # Programming languages and runtimes
     dev_packages=(
         "node"
-        "python@3.11"
+        "python@3.12"
         "go"
         "rust"
         "java"
@@ -43,16 +43,22 @@ install_dev_packages() {
 install_devops_packages() {
     echo -e "${BLUE}🔧 Installing DevOps packages...${NC}"
     
+    # Add HashiCorp tap if needed
+    if ! brew tap | grep -q "hashicorp/tap"; then
+        echo -e "${YELLOW}Adding hashicorp/tap...${NC}"
+        brew tap hashicorp/tap
+    fi
+    
     devops_packages=(
         "podman"
         "podman-compose"
         "kubernetes-cli"
         "helm"
-        "terraform"
+        "hashicorp/tap/terraform"
         "ansible"
-        "vault"
-        "consul"
-        "packer"
+        "hashicorp/tap/vault"
+        "hashicorp/tap/consul"
+        "hashicorp/tap/packer"
         "vagrant"
         "minikube"
         "istioctl"
@@ -62,13 +68,31 @@ install_devops_packages() {
     )
     
     for package in "${devops_packages[@]}"; do
-        if ! brew list "$package" >/dev/null 2>&1; then
+        # Extract just the package name for checking if it's installed
+        package_name=$(basename "$package")
+        
+        if ! brew list "$package_name" >/dev/null 2>&1; then
             echo -e "${YELLOW}Installing $package...${NC}"
             brew install "$package"
         else
-            echo -e "${GREEN}✅ $package already installed${NC}"
+            echo -e "${GREEN}✅ $package_name already installed${NC}"
         fi
     done
+    
+    # Install gcloud components if gcloud is available
+    if command -v gcloud >/dev/null 2>&1; then
+        echo -e "${BLUE}☁️ Installing gcloud components...${NC}"
+        
+        # Check if gke-gcloud-auth-plugin is already installed
+        if ! gcloud components list --filter="id:gke-gcloud-auth-plugin" --format="value(state.name)" 2>/dev/null | grep -q "Installed"; then
+            echo -e "${YELLOW}Installing gke-gcloud-auth-plugin...${NC}"
+            gcloud components install gke-gcloud-auth-plugin --quiet
+        else
+            echo -e "${GREEN}✅ gke-gcloud-auth-plugin already installed${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  gcloud CLI not found. Install google-cloud-sdk first to use gke-gcloud-auth-plugin${NC}"
+    fi
 }
 
 # Install cloud CLI tools

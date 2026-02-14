@@ -93,29 +93,44 @@ setup_python() {
     fi
 }
 
-# Go - using g (go version manager)
+# Go - using goenv
 setup_go() {
-    log "🐹 Setting up Go with g (go version manager)..."
+    log "🐹 Setting up Go with goenv..."
     
-    if ! command -v g &> /dev/null; then
-        # Install g (go version manager)
-        curl -sSL https://git.io/g-install | sh -s
+    if [[ "$DOTFILES_OS" == "macos" ]]; then
+        if ! command -v goenv &> /dev/null; then
+            brew install goenv
+        fi
+    else
+        if ! command -v goenv &> /dev/null; then
+            # Install goenv dependencies
+            sudo apt update
+            sudo apt install -y git curl
+            
+            # Install goenv from GitHub
+            git clone https://github.com/syndbg/goenv.git ~/.goenv
+        fi
     fi
     
-    # Initialize Go environment
+    # Initialize goenv for current session
+    export GOENV_ROOT="$HOME/.goenv"
+    export PATH="$GOENV_ROOT/bin:$PATH"
+    eval "$(goenv init -)"
     export GOPATH="$HOME/go"
-    export GOROOT="$HOME/.g/go"
-    export PATH="$HOME/.g/bin:$PATH"
     export PATH="$GOPATH/bin:$PATH"
     
     # Install latest stable Go
-    if command -v g &> /dev/null; then
-        log "Installing latest Go..."
-        g install latest
-        g set latest
+    local latest_go=$(goenv install -l | grep -E "^\s*[0-9]+\.[0-9]+\.[0-9]+$" | tail -1 | tr -d ' ')
+    if [[ -n "$latest_go" && ! -d "$GOENV_ROOT/versions/$latest_go" ]]; then
+        log "Installing Go $latest_go..."
+        goenv install "$latest_go"
+        goenv global "$latest_go"
         
         # Create Go workspace
         mkdir -p "$GOPATH/src" "$GOPATH/bin" "$GOPATH/pkg"
+        
+        # Refresh goenv shims
+        goenv rehash
         
         # Install Go development tools
         go install golang.org/x/tools/gopls@latest

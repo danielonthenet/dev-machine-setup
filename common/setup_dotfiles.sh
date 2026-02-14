@@ -227,28 +227,24 @@ generate_gitconfig() {
     local credential_helper=""
     if [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
         # Running in WSL
-        credential_helper="[credential]
-  helper = /mnt/c/Program\\\\ Files/Git/mingw64/bin/git-credential-manager.exe"
-        dotfiles_log "🐧 Detected WSL environment, using Windows Git Credential Manager"
+        credential_helper="manager"
+        dotfiles_log "🐧 Detected WSL environment, using Git Credential Manager"
     elif [[ "$DOTFILES_OS" == "macos" ]]; then
         # Running on macOS
-        credential_helper="[credential]
-  helper = osxkeychain"
-        dotfiles_log "🍎 Detected macOS environment, using osxkeychain"
+        credential_helper="manager"
+        dotfiles_log "🍎 Detected macOS environment, using Git Credential Manager"
     elif [[ "$DOTFILES_OS" == "windows" ]]; then
         # Running on Windows
-        credential_helper="[credential]
-	helper = manager"
+        credential_helper="manager"
         dotfiles_log "🪟 Detected Windows environment, using Git Credential Manager"
     elif [[ "$DOTFILES_OS" == "linux" ]]; then
-        # Running on native Linux - use WSL credential helper as fallback
-        credential_helper="[credential]
-  helper = /mnt/c/Program\\\\ Files/Git/mingw64/bin/git-credential-manager.exe"
-        dotfiles_log "🐧 Detected Linux environment, using Windows Git Credential Manager (fallback)"
+        # Running on native Linux
+        credential_helper="manager"
+        dotfiles_log "🐧 Detected Linux environment, using Git Credential Manager"
     else
-        # Fallback - no credential helper
-        credential_helper="# No credential helper configured for this platform"
-        dotfiles_log "❓ Unknown environment, no credential helper configured"
+        # Fallback - use manager as default
+        credential_helper="manager"
+        dotfiles_log "❓ Unknown environment, using Git Credential Manager as default"
     fi
     
     # Prompt for Git user details
@@ -266,6 +262,94 @@ generate_gitconfig() {
     # Write to ~/.gitconfig
     echo "$content" > "$target_path"
     dotfiles_log "✅ .gitconfig created at $target_path with platform-specific credential helper"
+}
+
+# =============================================================================
+# Claude Code Hooks Setup
+# =============================================================================
+
+setup_claude_hooks() {
+    dotfiles_log "🤖 Setting up Claude Code hooks..."
+
+    # Check if we're on macOS (caffeinate only works on macOS)
+    if [[ "$DOTFILES_OS" != "macos" ]]; then
+        dotfiles_log "⏭️  Skipping Claude Code sleep prevention hooks (macOS only)"
+        return 0
+    fi
+
+    # Check if Claude Code is installed
+    if ! command -v claude >/dev/null 2>&1; then
+        dotfiles_log "⏭️  Claude Code not installed, skipping hooks setup"
+        return 0
+    fi
+
+    # Ask user if they want to install Claude Code hooks
+    read -p "Do you want to install Claude Code sleep prevention hooks? (prevents Mac from sleeping while Claude is working) (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        dotfiles_log "⏭️  Skipping Claude Code hooks setup"
+        return 0
+    fi
+
+    # Create hooks directory if it doesn't exist
+    local hooks_dir="$HOME/.claude/hooks"
+    if [[ ! -d "$hooks_dir" ]]; then
+        mkdir -p "$hooks_dir"
+        dotfiles_log "📁 Created Claude hooks directory: $hooks_dir"
+    fi
+
+    # Copy hook scripts
+    if [[ -f "$DOTFILES_COMMON_DIR/claude_hooks/prevent-sleep.sh" ]]; then
+        cp "$DOTFILES_COMMON_DIR/claude_hooks/prevent-sleep.sh" "$hooks_dir/"
+        chmod +x "$hooks_dir/prevent-sleep.sh"
+        dotfiles_log "✅ Installed prevent-sleep.sh hook"
+    else
+        dotfiles_log "⚠️  prevent-sleep.sh not found in $DOTFILES_COMMON_DIR/claude_hooks/"
+    fi
+
+    if [[ -f "$DOTFILES_COMMON_DIR/claude_hooks/allow-sleep.sh" ]]; then
+        cp "$DOTFILES_COMMON_DIR/claude_hooks/allow-sleep.sh" "$hooks_dir/"
+        chmod +x "$hooks_dir/allow-sleep.sh"
+        dotfiles_log "✅ Installed allow-sleep.sh hook"
+    else
+        dotfiles_log "⚠️  allow-sleep.sh not found in $DOTFILES_COMMON_DIR/claude_hooks/"
+    fi
+
+    # Check if .claude/settings.json exists and update it
+    local settings_file="$HOME/.claude/settings.json"
+    if [[ -f "$settings_file" ]]; then
+        dotfiles_log "📝 Found existing Claude settings, you'll need to manually add hooks configuration"
+        echo ""
+        echo "Add the following to your $settings_file:"
+        echo ""
+        echo '  "hooks": {'
+        echo '    "Stop": ['
+        echo '      {'
+        echo '        "hooks": ['
+        echo '          {'
+        echo '            "type": "command",'
+        echo '            "command": "$HOME/.claude/hooks/allow-sleep.sh"'
+        echo '          }'
+        echo '        ]'
+        echo '      }'
+        echo '    ],'
+        echo '    "UserPromptSubmit": ['
+        echo '      {'
+        echo '        "hooks": ['
+        echo '          {'
+        echo '            "type": "command",'
+        echo '            "command": "$HOME/.claude/hooks/prevent-sleep.sh"'
+        echo '          }'
+        echo '        ]'
+        echo '      }'
+        echo '    ]'
+        echo '  }'
+        echo ""
+    else
+        dotfiles_log "💡 Claude settings not found. Hooks will be available when you configure Claude Code."
+    fi
+
+    dotfiles_log "✅ Claude Code hooks setup complete!"
 }
 
 # =============================================================================
@@ -400,6 +484,7 @@ install_dotfiles() {
     backup_existing_files
     create_symlinks
     setup_development_environment
+    setup_claude_hooks
 
     # Generate ~/.gitconfig from platform-specific template
     generate_gitconfig

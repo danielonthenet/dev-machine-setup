@@ -106,13 +106,13 @@ check_path_entry() {
 
 check_path_entry "$HOME/.rbenv/bin" "rbenv"
 check_path_entry "$HOME/.pyenv/bin" "pyenv"  
-check_path_entry "$HOME/.g/bin" "Go version manager"
+check_path_entry "$HOME/.goenv/bin" "goenv"
 check_path_entry "$HOME/go/bin" "Go binaries"
 
 # Check version managers
 check_version_manager "rbenv" "Ruby" "ruby -v"
 check_version_manager "pyenv" "Python" "python --version"
-check_version_manager "g" "Go" "go version"
+check_version_manager "goenv" "Go" "go version"
 check_version_manager "nvm" "Node.js" "node --version"
 check_version_manager "tfswitch" "Terraform" "terraform version"
 
@@ -132,8 +132,8 @@ check_env_var() {
 }
 
 check_env_var "PYENV_ROOT" "Python environment root"
+check_env_var "GOENV_ROOT" "Go environment root"
 check_env_var "GOPATH" "Go workspace"
-check_env_var "GOROOT" "Go installation"
 check_env_var "NVM_DIR" "Node Version Manager directory"
 
 # Test version manager initialization

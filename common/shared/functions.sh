@@ -235,8 +235,8 @@ show-versions() {
     
     if command -v go >/dev/null 2>&1; then
         echo "Go:        $(go version | cut -d' ' -f3 | sed 's/go//')"
-        if command -v g >/dev/null 2>&1; then
-            echo "  (g:      $(g --version 2>/dev/null || echo 'unknown'))"
+        if command -v goenv >/dev/null 2>&1; then
+            echo "  (goenv:  $(goenv version | cut -d' ' -f1))"
         fi
     else
         echo "Go:        not installed"
@@ -283,10 +283,14 @@ update-version-managers() {
         fi
     fi
     
-    # Update g (go version manager)
-    if command -v g >/dev/null 2>&1; then
-        echo "Updating g..."
-        curl -sSL https://git.io/g-install | sh -s
+    # Update goenv
+    if command -v goenv >/dev/null 2>&1; then
+        echo "Updating goenv..."
+        if [[ "$DOTFILES_OS" == "macos" ]]; then
+            brew upgrade goenv
+        else
+            cd ~/.goenv && git pull
+        fi
     fi
     
     # Update nvm
@@ -390,7 +394,7 @@ dotfiles-health() {
     # Check PATH
     echo ""
     echo "🛤️  PATH Check:"
-    local important_paths=("$HOME/.rbenv/bin" "$HOME/.pyenv/bin" "$HOME/.g/bin" "$HOME/go/bin")
+    local important_paths=("$HOME/.rbenv/bin" "$HOME/.pyenv/bin" "$HOME/.goenv/bin" "$HOME/go/bin")
     for path_entry in "${important_paths[@]}"; do
         if [[ ":$PATH:" == *":$path_entry:"* ]]; then
             echo "✅ $path_entry in PATH"
