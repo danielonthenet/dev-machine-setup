@@ -254,6 +254,73 @@ cd dev-machine-setup
 .\setup_windows.ps1 # Windows (PowerShell as Admin)
 ```
 
+## Work-Specific Configurations (custom-* Pattern)
+
+If you need to add company-specific or work-related configurations (SSL certificates, corporate proxies, internal tools), use the `custom-*` pattern to keep them separate from your personal setup.
+
+### Quick Setup
+
+1. **Create a custom directory** for your work configs:
+   ```bash
+   mkdir custom-work
+   ```
+
+2. **Add your work-specific shell functions and aliases:**
+   ```bash
+   # custom-work/functions.sh - Work-specific functions
+   # custom-work/aliases.sh - Work-specific aliases
+   ```
+
+3. **Create `~/.zshrc.custom`** for environment variables:
+   ```bash
+   # ~/.zshrc.custom
+   export SSL_CERT_FILE=$HOME/certs/company-ca-bundle.pem
+   export INTERNAL_TOOL_PATH="/opt/company-tools"
+   ```
+
+4. **Reload your shell:**
+   ```bash
+   exec zsh
+   ```
+
+### How It Works
+
+- `custom-*` directories are automatically gitignored (won't be committed)
+- Functions and aliases from `custom-*/functions.sh` and `custom-*/aliases.sh` are auto-loaded
+- `~/.zshrc.custom` is sourced automatically for environment variables
+- Use `common/.zshrc.custom.template` as a starting point
+
+### Backup and Restore
+
+**Backup your work configs:**
+```bash
+# Copy template and customize for your setup
+cp custom-sync_work_configs_to_drive.sh.template custom-sync_work_configs_to_drive.sh
+# Edit the script with your backup location (Google Drive, Dropbox, etc.)
+# Then run it to backup
+./custom-sync_work_configs_to_drive.sh
+```
+
+**Restore on a new machine:**
+```bash
+# Customize setup_work_configs.sh with your backup location
+./setup_work_configs.sh
+```
+
+### Example Structure
+
+```
+dev-machine-setup/
+├── custom-mycompany/           # Work configs (gitignored)
+│   ├── functions.sh           # Work functions
+│   ├── aliases.sh             # Work aliases
+│   └── setup_custom.sh        # Work-specific setup script
+├── custom-proxy-config.sh     # Corporate proxy setup (gitignored)
+└── ~/.zshrc.custom            # Work environment variables (gitignored)
+```
+
+This pattern keeps your fork clean and makes it easy to maintain both personal and work configurations.
+
 ## Troubleshooting
 
 **Commands not found?**
