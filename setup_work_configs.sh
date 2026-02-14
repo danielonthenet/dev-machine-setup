@@ -4,14 +4,28 @@
 
 set -e
 
-GOOGLE_DRIVE_PATH="$HOME/Google Drive/Dev-Configs/Office-Mac-Setup"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Auto-detect Google Drive location
+if [[ -d "$HOME/Library/CloudStorage" ]]; then
+    # Find GoogleDrive folder (works with any email)
+    GOOGLE_DRIVE_ROOT=$(find "$HOME/Library/CloudStorage" -maxdepth 1 -name "GoogleDrive-*" -type d 2>/dev/null | head -1)
+    if [[ -n "$GOOGLE_DRIVE_ROOT" ]]; then
+        GOOGLE_DRIVE_PATH="$GOOGLE_DRIVE_ROOT/My Drive/Dev-Configs/Office-Mac-Setup"
+    fi
+fi
+
+# Fallback to old path if new structure not found
+if [[ -z "$GOOGLE_DRIVE_PATH" || ! -d "$GOOGLE_DRIVE_PATH" ]]; then
+    GOOGLE_DRIVE_PATH="$HOME/Google Drive/Dev-Configs/Office-Mac-Setup"
+fi
 
 echo "🔍 Looking for work configs in Google Drive..."
 
 if [[ ! -d "$GOOGLE_DRIVE_PATH" ]]; then
-    echo "❌ Google Drive work configs not found at: $GOOGLE_DRIVE_PATH"
+    echo "❌ Google Drive work configs not found"
     echo "💡 Please ensure Google Drive is synced first"
+    echo "   Expected location: Dev-Configs/Office-Mac-Setup"
     exit 1
 fi
 
