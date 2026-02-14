@@ -123,11 +123,23 @@ if [[ -d /usr/local/share/zsh-completions ]]; then
 fi
 
 # Enable case-insensitive globbing (used in pathname expansion)
-shopt -s nocaseglob 2>/dev/null
+setopt NO_CASE_GLOB 2>/dev/null
 
-# Enable some Bash 4 features when possible:
+# Enable zsh features:
 # * `autocd`, e.g. `**/qux` will enter `./foo/bar/baz/qux`
 # * Recursive globbing, e.g. `echo **/*.txt`
-for option in autocd globstar; do
-    shopt -s "$option" 2> /dev/null;
-done;
+setopt AUTO_CD 2>/dev/null
+setopt GLOB_STAR_SHORT 2>/dev/null
+
+# Source work-specific configurations (if exists)
+[[ -f "$HOME/.zshrc.custom" ]] && source "$HOME/.zshrc.custom"
+
+# Auto-discover and source custom-* directory configs
+# This allows for custom-work, custom-company1, custom-company2, etc.
+for custom_dir in "$DOTFILES_DIR"/custom-*/; do
+    if [[ -d "$custom_dir" ]]; then
+        [[ -f "$custom_dir/functions.sh" ]] && source "$custom_dir/functions.sh"
+        [[ -f "$custom_dir/aliases.sh" ]] && source "$custom_dir/aliases.sh"
+    fi
+done
+

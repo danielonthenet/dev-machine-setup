@@ -12,3 +12,6 @@
 .personal/
 local/
 common/.gitconfig
+
+# Work-specific configurations (generic pattern)
+custom-*
