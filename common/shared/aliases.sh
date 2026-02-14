@@ -31,7 +31,6 @@ alias vimconfig='$EDITOR ~/.vimrc'
 command -v bat >/dev/null 2>&1 && alias cat='bat --style=numbers,changes,header'
 command -v eza >/dev/null 2>&1 && alias ls='eza --icons' && alias ll='eza -la --git --header --icons'
 command -v rg >/dev/null 2>&1 && alias grep='rg'
-command -v fd >/dev/null 2>&1 && alias find='fd'
 
 # Terraform
 alias tf='terraform'
@@ -117,7 +116,6 @@ alias check-versions='show-versions'
 alias dotfiles-update='cd $DOTFILES_DIR && git pull && ./common/setup_dotfiles.sh install'
 alias dotfiles-backup='cp ~/.zshrc ~/.zshrc.backup.$(date +%Y%m%d)'
 alias dotfiles-status='cd $DOTFILES_DIR && git status'
-alias dotfiles-health='dotfiles-health'
 
 # Performance and validation
 alias zsh-startup='zsh-profile'

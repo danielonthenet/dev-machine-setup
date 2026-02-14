@@ -53,7 +53,10 @@ $WINGET_DEV = @(
     "Postman.Postman",
     "GitHub.GitHubDesktop",
     "PuTTY.PuTTY",
-    "Microsoft.OpenSSH.Beta"
+    "Microsoft.OpenSSH.Beta",
+    "Noovolari.Leapp",
+    "Headlamp-K8s.Headlamp",
+    "Freelensapp.Freelens"
 )
 
 # Communication apps via winget
@@ -82,7 +85,8 @@ $WINGET_UTILITY = @(
     "voidtools.Everything",
     "AutoHotkey.AutoHotkey",
     "Greenshot.Greenshot",
-    "WiresharkFoundation.Wireshark"
+    "WiresharkFoundation.Wireshark",
+    "KeePassXCTeam.KeePassXC"
 )
 
 # Cloud CLI tools via winget
@@ -92,6 +96,11 @@ $WINGET_CLOUD = @(
     "Hashicorp.Terraform",
     "Kubernetes.kubectl",
     "Helm.Helm"
+)
+
+# Database tools via winget
+$WINGET_DATABASE = @(
+    "PostgreSQL.PostgreSQL"
 )
 
 # =============================================================================
@@ -369,7 +378,7 @@ function Install-UtilityPackages {
 # Function to install cloud packages
 function Install-CloudPackages {
     Write-Host "Installing cloud CLI tools..." -ForegroundColor Cyan
-    
+
     # Install winget cloud packages
     foreach ($package in $WINGET_CLOUD) {
         if (Test-WingetPackageInstalled $package) {
@@ -386,7 +395,7 @@ function Install-CloudPackages {
             }
         }
     }
-    
+
     # Install chocolatey cloud packages (fallbacks)
     foreach ($package in $CHOCO_CLOUD) {
         if (Test-ChocoPackageInstalled $package) {
@@ -395,6 +404,28 @@ function Install-CloudPackages {
             Write-Host "Installing $package via chocolatey..." -ForegroundColor Yellow
             try {
                 choco install $package -y --no-progress --ignore-checksums
+                Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "ERROR: Failed to install $package" -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+            }
+        }
+    }
+}
+
+# Function to install database packages
+function Install-DatabasePackages {
+    Write-Host "Installing database tools..." -ForegroundColor Cyan
+
+    # Install winget database packages
+    foreach ($package in $WINGET_DATABASE) {
+        if (Test-WingetPackageInstalled $package) {
+            Write-Host "$package is already installed" -ForegroundColor Yellow
+        } else {
+            Write-Host "Installing $package via winget..." -ForegroundColor Yellow
+            try {
+                winget install --id=$package -e --accept-source-agreements --accept-package-agreements
                 Write-Host "SUCCESS: $package installed successfully" -ForegroundColor Green
             }
             catch {
@@ -465,17 +496,20 @@ function Install-InteractivePackages {
         "2" {
             Install-EssentialPackages
             Install-DevPackages
+            Install-DatabasePackages
             Install-CLITools
         }
         "3" {
             Install-EssentialPackages
             Install-DevPackages
+            Install-DatabasePackages
             Install-CommPackages
             Install-CLITools
         }
         "4" {
             Install-EssentialPackages
             Install-DevPackages
+            Install-DatabasePackages
             Install-CommPackages
             Install-MediaPackages
             Install-UtilityPackages
@@ -486,22 +520,25 @@ function Install-InteractivePackages {
             Write-Host "Custom package selection:" -ForegroundColor Yellow
             $installEssential = Read-Host "Install essential packages? (Y/n)"
             if ($installEssential -ne "n") { Install-EssentialPackages }
-            
+
             $installDev = Read-Host "Install development packages? (Y/n)"
             if ($installDev -ne "n") { Install-DevPackages }
-            
+
+            $installDatabase = Read-Host "Install database tools (PostgreSQL)? (Y/n)"
+            if ($installDatabase -ne "n") { Install-DatabasePackages }
+
             $installComm = Read-Host "Install communication packages? (y/N)"
             if ($installComm -eq "y") { Install-CommPackages }
-            
+
             $installMedia = Read-Host "Install media packages? (y/N)"
             if ($installMedia -eq "y") { Install-MediaPackages }
-            
+
             $installUtility = Read-Host "Install utility packages? (y/N)"
             if ($installUtility -eq "y") { Install-UtilityPackages }
-            
+
             $installCloud = Read-Host "Install cloud CLI tools? (y/N)"
             if ($installCloud -eq "y") { Install-CloudPackages }
-            
+
             $installCLI = Read-Host "Install modern CLI tools? (Y/n)"
             if ($installCLI -ne "n") { Install-CLITools }
         }

@@ -92,6 +92,12 @@ gl                   # git pull
 glog                 # git log --oneline --graph
 ```
 
+**Git Credential Manager**: Secure authentication for GitHub, Azure DevOps, GitLab, and Bitbucket
+- Automatically installed on all platforms
+- Provides multi-factor authentication support
+- Secure credential storage in system keychain
+- No manual configuration needed - works automatically with `git clone`, `git push`, etc.
+
 ## Container Tools
 
 ```bash
@@ -101,6 +107,22 @@ podman images        # List images
 dps                  # Formatted podman ps
 dclean               # Clean up unused containers/images
 ```
+
+## Kubernetes Tools
+
+**Freelens**:
+- Open-source Kubernetes IDE
+- Cross-platform (macOS, Windows, Linux)
+- Cluster management and monitoring
+- Multi-cluster support
+- No vendor lock-in
+
+**Headlamp**:
+- Web-based Kubernetes UI
+- Cross-platform (macOS, Windows, Linux)
+- Easy-to-use cluster dashboard
+- Multi-cluster management
+- Resource monitoring and management
 
 ## Utility Functions
 
@@ -166,6 +188,34 @@ flush                # Flush DNS cache
 open .               # Open in file manager
 explorer .           # Open Windows Explorer (WSL only)
 sysinfo              # Show system information
+```
+
+## Productivity Applications
+
+**Raycast** (macOS):
+- Advanced launcher and productivity tool
+- Replaces Spotlight with enhanced features
+- Extensions for quick actions and workflows
+- `Cmd+Space` to launch (configurable)
+
+**KeePassXC**:
+- Open-source password manager
+- Cross-platform (macOS, Windows, Linux)
+- Browser integration available
+- Database syncing via cloud storage
+
+**Claude Code**:
+- AI-powered coding assistant from Anthropic
+- Terminal-based tool for code assistance
+- Understands your codebase and helps with development tasks
+- Cross-platform (macOS, Linux via npm)
+
+```bash
+# Launch applications
+open -a Raycast       # Open Raycast (macOS)
+keepassxc             # Launch KeePassXC (Linux)
+claude                # Launch Claude Code (after npm install)
+# Use Start Menu or Desktop shortcuts on Windows
 ```
 
 ## Troubleshooting

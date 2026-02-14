@@ -16,8 +16,8 @@ export XDG_CACHE_HOME="$HOME/.cache"
 
 # Version Manager Exports
 export PYENV_ROOT="$HOME/.pyenv"
+export GOENV_ROOT="$HOME/.goenv"
 export GOPATH="$HOME/go"
-export GOROOT="$HOME/.g/go"
 export NVM_DIR="$HOME/.nvm"
 
 # Development
@@ -35,5 +35,5 @@ export PATH="$PATH:$HOME/.local/bin"
 # Version Manager PATH additions
 export PATH="$HOME/.rbenv/bin:$PATH"
 export PATH="$PYENV_ROOT/bin:$PATH"
-export PATH="$HOME/.g/bin:$PATH"
+export PATH="$GOENV_ROOT/bin:$PATH"
 export PATH="$GOPATH/bin:$PATH"

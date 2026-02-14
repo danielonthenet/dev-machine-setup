@@ -1,18 +1,21 @@
 #!/bin/bash
 # Lazy loading for version managers to improve shell startup performance
 
-# Lazy load rbenv
-rbenv() {
-    if [[ -d "$HOME/.rbenv" ]]; then
-        export PATH="$HOME/.rbenv/bin:$PATH"
-        eval "$(command rbenv init -)"
-        unfunction rbenv
-        rbenv "$@"
-    else
-        echo "rbenv not installed"
-        return 1
-    fi
-}
+# Initialize rbenv immediately (not lazy-loaded)
+# rbenv needs shims in PATH for automatic version switching
+if [[ -d "$HOME/.rbenv" ]]; then
+    export PATH="$HOME/.rbenv/shims:$PATH"
+    # Note: Full rbenv init not needed - just shims in PATH is sufficient
+    # for automatic version switching via shims
+fi
+
+# Initialize goenv shims immediately (similar to rbenv)
+# goenv needs shims in PATH for automatic version switching
+if [[ -d "$HOME/.goenv" ]]; then
+    export PATH="$HOME/.goenv/shims:$PATH"
+    # Note: Full goenv init not needed - just shims in PATH is sufficient
+    # for automatic version switching via shims
+fi
 
 # Lazy load pyenv
 pyenv() {
@@ -50,30 +53,20 @@ nvm() {
     fi
 }
 
-# Lazy load g (go version manager) - use go-version to avoid conflict with git alias
-load_go_version_manager() {
-    if command -v /usr/local/bin/g >/dev/null 2>&1 || command -v ~/.g/bin/g >/dev/null 2>&1; then
+# Lazy load goenv
+goenv() {
+    if [[ -d "$HOME/.goenv" ]]; then
+        export GOENV_ROOT="$HOME/.goenv"
+        export PATH="$GOENV_ROOT/bin:$PATH"
+        eval "$(command goenv init -)"
         export GOPATH="$HOME/go"
-        export GOROOT="$HOME/.g/go"
-        export PATH="$HOME/.g/bin:$PATH"
         export PATH="$GOPATH/bin:$PATH"
-        
-        # Remove this loader function and call the actual g command
-        unfunction load_go_version_manager
-        
-        # Call g with original arguments  
-        if command -v ~/.g/bin/g >/dev/null 2>&1; then
-            ~/.g/bin/g "$@"
-        else
-            /usr/local/bin/g "$@"
-        fi
+        unfunction goenv
+        goenv "$@"
     else
-        echo "g (go version manager) not installed"
+        echo "goenv not installed"
         return 1
     fi
 }
-
-# Use go-version alias to avoid conflict with git alias 'g'
-alias go-version='load_go_version_manager'
 
 # Note: tfswitch doesn't need lazy loading as it's just a binary without heavy initialization

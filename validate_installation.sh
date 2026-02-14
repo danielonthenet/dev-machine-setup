@@ -125,6 +125,19 @@ for tool in "${tools[@]}"; do
 done
 echo ""
 
+# Check HashiCorp tools
+echo "🔐 HashiCorp Tools:"
+hashicorp_tools=("consul" "vault")
+for tool in "${hashicorp_tools[@]}"; do
+    if command -v "$tool" >/dev/null 2>&1; then
+        version_output=$("$tool" version 2>/dev/null | head -n1 || echo "version unavailable")
+        echo "  ✅ $tool ($version_output)"
+    else
+        echo "  ❓ $tool not installed"
+    fi
+done
+echo ""
+
 # Platform-specific checks
 echo "🎯 Platform-Specific Checks:"
 case "$PLATFORM" in

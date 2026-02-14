@@ -48,17 +48,23 @@ install_choice=${install_choice:-1}
 case $install_choice in
     1)
         install_cli_packages
+        install_npm_packages
+        install_python_packages
         install_essential_apps
         install_fonts
         ;;
     2)
         install_cli_packages
+        install_npm_packages
+        install_python_packages
         install_essential_apps
         install_dev_apps
         install_fonts
         ;;
     3)
         install_cli_packages
+        install_npm_packages
+        install_python_packages
         install_essential_apps
         install_dev_apps
         install_comm_apps
@@ -66,6 +72,8 @@ case $install_choice in
         ;;
     4)
         install_cli_packages
+        install_npm_packages
+        install_python_packages
         install_essential_apps
         echo ""
         read -p "Install development applications? (y/n): " -n 1 -r
@@ -79,11 +87,17 @@ case $install_choice in
         read -p "Install optional applications? (y/n): " -n 1 -r
         echo
         [[ $REPLY =~ ^[Yy]$ ]] && install_optional_apps
+        echo ""
+        read -p "Install Cloud SQL Proxy? (y/n): " -n 1 -r
+        echo
+        [[ $REPLY =~ ^[Yy]$ ]] && install_cloud_sql_proxy
         install_fonts
         ;;
     *)
         echo "Invalid choice, installing essentials only"
         install_cli_packages
+        install_npm_packages
+        install_python_packages
         install_essential_apps
         install_fonts
         ;;

@@ -25,9 +25,16 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.We
 - Node.js (nvm), Python (pyenv), Ruby (rbenv), Go (g), Terraform (tfswitch)
 
 **Development Tools:**
-- Git, Docker/Podman, modern CLI tools (exa, bat, fd, ripgrep, etc.)
+- Git, Docker/Podman, Kubernetes management (Freelens, Headlamp)
+- Modern CLI tools (exa, bat, fd, ripgrep, etc.)
 - Zsh with Oh My Zsh and Powerlevel10k theme
 - Platform package managers (Homebrew, apt/yum, Chocolatey)
+- Kubernetes: kubectl, helm, kubeconform (manifest validation)
+- YAML tools: yq (processor), yamale (schema validator)
+
+**AWS Authentication:**
+- Leapp desktop app and CLI for secure AWS credential management
+- Supports IAM users, federated roles, and AWS SSO
 
 Complete package lists are in: `macos/packages.sh`, `linux/packages.sh`, `windows/packages.ps1`
 
@@ -73,7 +80,129 @@ update-system        # Update packages
 reload               # Reload shell config
 ```
 
+## Cloud SQL Proxy
 
+Securely connect to Google Cloud SQL instances without IP whitelisting or SSL configuration. Available as an optional installation during setup.
+
+**Quick Install:**
+- Select option 4 (Custom) during setup and answer 'y' when prompted
+- Or install manually: `source macos/packages.sh && install_cloud_sql_proxy` (macOS) or `source linux/packages.sh && install_cloud_sql_proxy` (Linux)
+
+**Basic Usage:**
+```bash
+cloud-sql-proxy project:region:instance    # Connect to instance
+cloud-sql-proxy --version                  # Check version
+```
+
+For detailed usage, authentication, and troubleshooting, see [docs/CLOUD_SQL_PROXY.md](docs/CLOUD_SQL_PROXY.md)
+
+## AWS Authentication with Leapp
+
+Leapp provides secure, temporary AWS credential management with support for multiple AWS accounts and authentication methods.
+
+### Platform-Specific Setup
+
+**macOS:**
+- Desktop app: Installed via Homebrew Cask (`leapp`)
+- CLI: Architecture-specific installation (Intel/ARM64) via Homebrew
+
+**Windows + WSL:**
+- Desktop app: Installed on Windows via winget (`Noovolari.Leapp`)
+- CLI: Installed in WSL via Homebrew/Linuxbrew
+- The Windows desktop app handles authentication for both Windows and WSL environments
+
+**Linux (Desktop):**
+- Desktop app: Manual installation from [Leapp releases](https://www.leapp.cloud/releases)
+- CLI: Installed via Homebrew/Linuxbrew
+
+### Getting Started with Leapp
+
+1. **Launch the desktop app** (required for CLI to work)
+2. **Configure your first session:**
+   ```bash
+   leapp session add    # Add AWS account/role
+   ```
+3. **Start a session:**
+   ```bash
+   leapp session start <session-name>
+   ```
+4. **Use AWS CLI normally:**
+   ```bash
+   aws s3 ls           # Credentials automatically available
+   ```
+
+### Key Features
+
+- **Temporary credentials**: Automatic rotation and secure storage
+- **Multiple accounts**: Switch between AWS accounts seamlessly  
+- **SSO integration**: Support for AWS Single Sign-On
+- **Role chaining**: Assume roles across accounts
+- **Zero-config AWS CLI**: Credentials automatically available to aws-cli
+
+### Important Notes
+
+- **Desktop app dependency**: The CLI requires the desktop app to be running
+- **WSL compatibility**: Windows Leapp desktop app works with WSL CLI
+- **Credential isolation**: Each session provides isolated, temporary credentials
+- **Auto-refresh**: Credentials are automatically refreshed when needed
+
+## Claude Code Sleep Prevention Hooks (macOS)
+
+When using Claude Code on macOS, you can prevent your Mac from sleeping while Claude is working. This is especially useful when running long tasks and you step away from your computer.
+
+### What It Does
+
+- **Automatically prevents sleep** when Claude Code starts processing your requests
+- **Re-enables sleep** when Claude Code finishes or is stopped
+- **Works for up to 1 hour** per session (automatically times out for safety)
+
+### Setup
+
+During dotfiles installation, you'll be prompted to install Claude Code sleep prevention hooks. If you want to install them manually:
+
+1. **Copy hook scripts:**
+   ```bash
+   mkdir -p ~/.claude/hooks
+   cp common/claude_hooks/prevent-sleep.sh ~/.claude/hooks/
+   cp common/claude_hooks/allow-sleep.sh ~/.claude/hooks/
+   chmod +x ~/.claude/hooks/*.sh
+   ```
+
+2. **Configure Claude Code settings:**
+   Add to `~/.claude/settings.json`:
+   ```json
+   "hooks": {
+     "Stop": [
+       {
+         "hooks": [
+           {
+             "type": "command",
+             "command": "$HOME/.claude/hooks/allow-sleep.sh"
+           }
+         ]
+       }
+     ],
+     "UserPromptSubmit": [
+       {
+         "hooks": [
+           {
+             "type": "command",
+             "command": "$HOME/.claude/hooks/prevent-sleep.sh"
+           }
+         ]
+       }
+     ]
+   }
+   ```
+
+3. **Restart Claude Code** for the hooks to take effect
+
+### How It Works
+
+- Uses macOS's `caffeinate` command to temporarily prevent system sleep
+- Automatically cleans up if multiple sessions are started
+- Only prevents idle sleep (display can still sleep)
+- Safe timeout after 1 hour to prevent indefinite wake
 
 ## macOS-Style Shortcut Keys (Kinto)
 
