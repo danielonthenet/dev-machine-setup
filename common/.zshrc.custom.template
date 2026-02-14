@@ -1,0 +1,21 @@
+# Work-specific configurations template
+# Copy this to ~/.zshrc.custom and customize for your work environment
+
+# Corporate SSL Certificates (if needed)
+# export SSL_CERT_FILE=$HOME/certs/company-ca-bundle.pem
+# export NODE_EXTRA_CA_CERTS=$HOME/certs/company-ca-bundle.pem
+# export REQUESTS_CA_BUNDLE=$HOME/certs/company-ca-bundle.pem
+# export AWS_CA_BUNDLE=$HOME/certs/company-ca-bundle.pem
+
+# Note: Functions and aliases from custom-* directories are auto-loaded
+# Just place your work configs in: custom-<company>/
+#
+# Example structure:
+#   custom-mycompany/
+#   ├── functions.sh      # Work-specific functions
+#   ├── aliases.sh        # Work-specific aliases
+#   └── setup_custom.sh   # Setup script
+
+# Additional work-specific environment variables
+# export WORK_PROJECT_PATH="$HOME/workspace/work"
+# export PATH="/custom/work/tools:$PATH"
