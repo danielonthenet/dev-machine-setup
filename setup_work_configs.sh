@@ -49,18 +49,19 @@ if [[ -f "$GOOGLE_DRIVE_PATH/.zshrc.custom" ]]; then
     echo "✅ .zshrc.custom copied to home directory"
 fi
 
-# Copy certificates
-if [[ -d "$GOOGLE_DRIVE_PATH/certificates" ]]; then
-    mkdir -p ~/certs
-    cp "$GOOGLE_DRIVE_PATH/certificates"/* ~/certs/ 2>/dev/null || true
-    echo "✅ Certificates copied"
-fi
-
-# Copy any custom-* files from common/
-if compgen -G "$GOOGLE_DRIVE_PATH/custom-*.*" > /dev/null; then
-    cp "$GOOGLE_DRIVE_PATH"/custom-*.* "$SCRIPT_DIR/common/" 2>/dev/null || true
-    echo "✅ Custom override files copied"
-fi
+# Run bootstrap.sh from each custom-* directory (if present).
+# bootstrap.sh handles non-interactive post-restore work (cert copying, dir
+# creation, etc.) and is the conventional entry-point for any custom-<name>
+# workspace.  For a full interactive setup, each workspace may also provide
+# setup_custom.sh — that is run separately by the user.
+for custom_dir in "$SCRIPT_DIR"/custom-*/; do
+    if [[ -d "$custom_dir" && -f "$custom_dir/bootstrap.sh" ]]; then
+        dir_name=$(basename "$custom_dir")
+        echo "🔧 Running $dir_name/bootstrap.sh..."
+        chmod +x "$custom_dir/bootstrap.sh"
+        bash "$custom_dir/bootstrap.sh"
+    fi
+done
 
 # Set up project .env files by prompting for all values.
 # Google Drive holds a <project>.env.template (keys + non-secret defaults, secrets blank)
@@ -137,9 +138,10 @@ echo "✅ Work configs restored!"
 echo ""
 echo "💡 Next steps:"
 echo "   1. Run: ./setup_mac.sh"
-echo "   2. Check for custom-* setup scripts:"
+echo "   2. For a full interactive workspace setup, run the workspace's setup_custom.sh:"
 for custom_dir in "$SCRIPT_DIR"/custom-*/; do
     if [[ -d "$custom_dir" && -f "$custom_dir/setup_custom.sh" ]]; then
-        echo "      Run: ./${custom_dir}setup_custom.sh"
+        dir_name=$(basename "$custom_dir")
+        echo "      ./$dir_name/setup_custom.sh"
     fi
 done
