@@ -18,6 +18,23 @@ echo "=================================="
 # Track validation results
 validation_passed=true
 
+load_sdkman_if_available() {
+    export SDKMAN_DIR="${SDKMAN_DIR:-$HOME/.sdkman}"
+
+    if [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then
+        # shellcheck disable=SC1090
+        source "$SDKMAN_DIR/bin/sdkman-init.sh"
+        return 0
+    fi
+
+    return 1
+}
+
+sdkman_loaded=false
+if load_sdkman_if_available && command -v sdk >/dev/null 2>&1; then
+    sdkman_loaded=true
+fi
+
 # Function to check if a command exists
 check_command() {
     local cmd="$1"
@@ -83,6 +100,14 @@ check_version_manager() {
                     echo "  No Terraform version installed"
                 fi
                 ;;
+            "sdk")
+                if command -v java >/dev/null 2>&1; then
+                    current_version=$(java -version 2>&1 | head -n1)
+                    echo "  Current Java version: $current_version"
+                else
+                    echo "  No Java version installed"
+                fi
+                ;;
         esac
     fi
 }
@@ -105,14 +130,24 @@ check_path_entry() {
 }
 
 check_path_entry "$HOME/.rbenv/bin" "rbenv"
-check_path_entry "$HOME/.pyenv/bin" "pyenv"  
+check_path_entry "$HOME/.pyenv/bin" "pyenv"
 check_path_entry "$HOME/.goenv/bin" "goenv"
 check_path_entry "$HOME/go/bin" "Go binaries"
+if command -v sdk &>/dev/null; then
+    echo -e "  ${GREEN}✓${NC} SDKMAN! (sdk available)"
+elif [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]]; then
+    echo -e "  ${RED}✗${NC} SDKMAN! init script exists but could not be loaded"
+    validation_passed=false
+else
+    echo -e "  ${RED}✗${NC} SDKMAN! init script not found"
+    validation_passed=false
+fi
 
 # Check version managers
 check_version_manager "rbenv" "Ruby" "ruby -v"
 check_version_manager "pyenv" "Python" "python --version"
 check_version_manager "goenv" "Go" "go version"
+check_version_manager "sdk" "Java" "java -version 2>&1 | head -n1"
 check_version_manager "nvm" "Node.js" "node --version"
 check_version_manager "tfswitch" "Terraform" "terraform version"
 
@@ -135,6 +170,7 @@ check_env_var "PYENV_ROOT" "Python environment root"
 check_env_var "GOENV_ROOT" "Go environment root"
 check_env_var "GOPATH" "Go workspace"
 check_env_var "NVM_DIR" "Node Version Manager directory"
+check_env_var "SDKMAN_DIR" "SDKMAN! directory"
 
 # Test version manager initialization
 echo ""

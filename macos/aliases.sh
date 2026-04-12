@@ -140,6 +140,5 @@ alias kport='kubectl port-forward'
 # macOS specific utilities
 alias darkmode='osascript -e "tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode"'
 alias screensaver='open -a ScreenSaverEngine'
-alias sleep='pmset sleepnow'
 alias restart='sudo shutdown -r now'
 alias shutdown='sudo shutdown -h now'

@@ -124,3 +124,15 @@ alias dotfiles-check='dotfiles-quick-check'
 # Quick edit configs
 alias edit-dotfiles='$EDITOR $DOTFILES_DIR'
 alias edit-zsh='$EDITOR ~/.zshrc'
+
+# Claude Profile Management
+# Source the claude-profile-swap functions
+if [[ -f "${DOTFILES_DIR:-$HOME/.dotfiles}/common/shared/claude-profile-swap.sh" ]]; then
+    source "${DOTFILES_DIR:-$HOME/.dotfiles}/common/shared/claude-profile-swap.sh"
+fi
+
+alias claude-save='claude_save_profile'
+alias claude-list='claude_list_profiles'
+alias claude-switch='claude_switch_to'
+alias claude-delete='claude_delete_profile'
+alias claude-status='claude_show_status'

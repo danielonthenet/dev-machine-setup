@@ -128,7 +128,10 @@ install_packages() {
         chmod +x "$SETUP_DIR/macos/setup_macos.sh"
         # Export DOTFILES_DIR for the macOS setup script
         export DOTFILES_DIR="$SETUP_DIR"
-        source "$SETUP_DIR/macos/setup_macos.sh"
+        # Run in subshell to isolate any set -e issues from child scripts
+        (source "$SETUP_DIR/macos/setup_macos.sh") || {
+            log "⚠️  Some package installations had issues, continuing..."
+        }
     else
         log "⚠️  macOS setup script not found, continuing with basic setup"
     fi
@@ -160,7 +163,9 @@ configure_system() {
     if [[ -f "$SETUP_DIR/macos/dotfiles/.osx" ]]; then
         echo -e "${BLUE}Applying macOS system preferences...${NC}"
         chmod +x "$SETUP_DIR/macos/dotfiles/.osx"
+        RUN_AS_ROOT=true
         source "$SETUP_DIR/macos/dotfiles/.osx"
+        unset RUN_AS_ROOT
         log "✅ macOS system preferences applied"
     else
         log "ℹ️  No macOS system preferences file found, skipping"
@@ -175,14 +180,16 @@ validate_setup() {
     
     if [[ -f "$SETUP_DIR/validate.sh" ]]; then
         chmod +x "$SETUP_DIR/validate.sh"
-        source "$SETUP_DIR/validate.sh"
+        (source "$SETUP_DIR/validate.sh") || {
+            log "⚠️  Some validation checks failed, see above for details"
+        }
     fi
     
     # Quick health check
     if command -v dotfiles-health &> /dev/null; then
         echo ""
         echo -e "${BLUE}Running dotfiles health check...${NC}"
-        dotfiles-health
+        dotfiles-health || true
     fi
 }
 

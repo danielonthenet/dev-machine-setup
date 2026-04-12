@@ -13,14 +13,27 @@
 #
 # @author Jeff Geerling, 2014
 
-# Warn that some commands will not be run if the script is not run as root.
-if [[ $EUID -ne 0 ]]; then
+# Warn that some commands will not be run unless the caller explicitly opts
+# into sudo prompts (RUN_AS_ROOT=true) or runs the script as root.
+start_sudo_keepalive() {
+  # Update existing `sudo` timestamp until `.osx` has finished
+  while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+}
+
+if [[ "${RUN_AS_ROOT:-false}" == "true" ]]; then
+  if [[ $EUID -eq 0 ]] || sudo -v; then
+    RUN_AS_ROOT=true
+    start_sudo_keepalive
+  else
+    RUN_AS_ROOT=false
+    printf "Certain commands will not be run without sudo privileges. To run as root, run the same command prepended with 'sudo', for example: $ sudo $0\n\n" | fold -s -w 80
+  fi
+elif [[ $EUID -ne 0 ]]; then
   RUN_AS_ROOT=false
   printf "Certain commands will not be run without sudo privileges. To run as root, run the same command prepended with 'sudo', for example: $ sudo $0\n\n" | fold -s -w 80
 else
   RUN_AS_ROOT=true
-  # Update existing `sudo` timestamp until `.osx` has finished
-  while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+  start_sudo_keepalive
 fi
 
 ###############################################################################
@@ -62,12 +75,12 @@ defaults write com.apple.BluetoothAudioAgent "Apple Bitpool Min (editable)" -int
 # Enable full keyboard access for all controls
 defaults write NSGlobalDomain AppleKeyboardUIMode -int 3
 
-# Use scroll gesture with the Ctrl (^) modifier key to zoom
-defaults write com.apple.universalaccess closeViewScrollWheelToggle -bool true
-defaults write com.apple.universalaccess HIDScrollZoomModifierMask -int 262144
+# Use scroll gesture with the Ctrl (^) modifier key to zoom (requires sudo)
+defaults write com.apple.universalaccess closeViewScrollWheelToggle -bool true 2>/dev/null || true
+defaults write com.apple.universalaccess HIDScrollZoomModifierMask -int 262144 2>/dev/null || true
 
-# Follow the keyboard focus while zoomed in
-defaults write com.apple.universalaccess closeViewZoomFollowsFocus -bool true
+# Follow the keyboard focus while zoomed in (requires sudo)
+defaults write com.apple.universalaccess closeViewZoomFollowsFocus -bool true 2>/dev/null || true
 
 # Disable press-and-hold for keys in favor of key repeat
 defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
@@ -86,23 +99,25 @@ defaults write NSGlobalDomain AppleMetricUnits -bool true
 # Energy saving                                                              #
 ###############################################################################
 
-# Enable lid wakeup
-sudo pmset -a lidwake 1
+if [[ "$RUN_AS_ROOT" = true ]]; then
+  # Enable lid wakeup
+  sudo pmset -a lidwake 1
 
-# Restart automatically on power loss
-sudo pmset -a autorestart 1
+  # Restart automatically on power loss
+  sudo pmset -a autorestart 1
 
-# Restart automatically if the computer freezes
-sudo systemsetup -setrestartfreeze on
+  # Restart automatically if the computer freezes
+  sudo systemsetup -setrestartfreeze on
 
-# Sleep the display after 15 minutes
-sudo pmset -a displaysleep 15
+  # Sleep the display after 15 minutes
+  sudo pmset -a displaysleep 15
 
-# Disable machine sleep while charging
-sudo pmset -c sleep 0
+  # Disable machine sleep while charging
+  sudo pmset -c sleep 0
 
-# Set machine sleep to 5 minutes on battery
-sudo pmset -b sleep 5
+  # Set machine sleep to 5 minutes on battery
+  sudo pmset -b sleep 5
+fi
 
 ###############################################################################
 # Screen                                                                      #
@@ -297,18 +312,19 @@ defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
 # Mail                                                                        #
 ###############################################################################
 
+# Note: Mail.app settings may fail on recent macOS versions due to sandbox restrictions
 # Disable send and reply animations in Mail.app
 #defaults write com.apple.mail DisableReplyAnimations -bool true
 #defaults write com.apple.mail DisableSendAnimations -bool true
 
 # Copy email addresses as `foo@example.com` instead of `Foo Bar <foo@example.com>` in Mail.app
-defaults write com.apple.mail AddressesIncludeNameOnPasteboard -bool false
+defaults write com.apple.mail AddressesIncludeNameOnPasteboard -bool false 2>/dev/null || true
 
 # Add the keyboard shortcut ⌘ + Enter to send an email in Mail.app
 # defaults write com.apple.mail NSUserKeyEquivalents -dict-add "Send" -string "@\\U21a9"
 
 # Display emails in threaded mode
-defaults write com.apple.mail DraftsViewerAttributes -dict-add "DisplayInThreadedMode" -string "yes"
+defaults write com.apple.mail DraftsViewerAttributes -dict-add "DisplayInThreadedMode" -string "yes" 2>/dev/null || true
 # defaults write com.apple.mail DraftsViewerAttributes -dict-add "SortedDescending" -string "yes"
 # defaults write com.apple.mail DraftsViewerAttributes -dict-add "SortOrder" -string "received-date"
 

@@ -132,11 +132,14 @@ if [[ "$SHELL" != "$(which zsh)" ]]; then
     chsh -s $(which zsh)
 fi
 
-# Development environment setup
+# Development environment setup (run as subprocess to isolate set -e)
 if [[ -f "$DOTFILES_DIR/common/setup_dev_env.sh" ]]; then
     echo "💻 Running development environment setup..."
     chmod +x "$DOTFILES_DIR/common/setup_dev_env.sh"
-    source "$DOTFILES_DIR/common/setup_dev_env.sh"
+    # Run in subshell to prevent set -euo pipefail from affecting parent
+    (source "$DOTFILES_DIR/common/setup_dev_env.sh") || {
+        echo "⚠️  Development environment setup had some issues, continuing..."
+    }
 fi
 
 echo "✅ Linux/WSL setup complete!"

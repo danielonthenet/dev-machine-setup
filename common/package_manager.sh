@@ -78,21 +78,6 @@ install_devops_packages() {
             echo -e "${GREEN}✅ $package_name already installed${NC}"
         fi
     done
-    
-    # Install gcloud components if gcloud is available
-    if command -v gcloud >/dev/null 2>&1; then
-        echo -e "${BLUE}☁️ Installing gcloud components...${NC}"
-        
-        # Check if gke-gcloud-auth-plugin is already installed
-        if ! gcloud components list --filter="id:gke-gcloud-auth-plugin" --format="value(state.name)" 2>/dev/null | grep -q "Installed"; then
-            echo -e "${YELLOW}Installing gke-gcloud-auth-plugin...${NC}"
-            gcloud components install gke-gcloud-auth-plugin --quiet
-        else
-            echo -e "${GREEN}✅ gke-gcloud-auth-plugin already installed${NC}"
-        fi
-    else
-        echo -e "${YELLOW}⚠️  gcloud CLI not found. Install google-cloud-sdk first to use gke-gcloud-auth-plugin${NC}"
-    fi
 }
 
 # Install cloud CLI tools
@@ -119,6 +104,16 @@ install_cloud_packages() {
             echo -e "${GREEN}✅ $package_name already installed${NC}"
         fi
     done
+
+    # Install gke-gcloud-auth-plugin now that google-cloud-sdk is installed
+    if command -v gcloud >/dev/null 2>&1; then
+        if ! gcloud components list --filter="id:gke-gcloud-auth-plugin" --format="value(state.name)" 2>/dev/null | grep -q "Installed"; then
+            echo -e "${YELLOW}Installing gke-gcloud-auth-plugin...${NC}"
+            gcloud components install gke-gcloud-auth-plugin --quiet
+        else
+            echo -e "${GREEN}✅ gke-gcloud-auth-plugin already installed${NC}"
+        fi
+    fi
 }
 
 # Install database tools

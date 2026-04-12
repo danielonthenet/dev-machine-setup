@@ -12,6 +12,53 @@ log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$HOME/.dotfiles-install.log"
 }
 
+get_homebrew_prefix() {
+    if [[ -x "/opt/homebrew/bin/brew" ]]; then
+        echo "/opt/homebrew"
+    elif [[ -x "/usr/local/bin/brew" ]]; then
+        echo "/usr/local"
+    elif command -v brew >/dev/null 2>&1; then
+        brew --prefix 2>/dev/null
+    else
+        return 1
+    fi
+}
+
+source_nvm_for_current_session() {
+    export NVM_DIR="$HOME/.nvm"
+
+    local brew_prefix=""
+    if [[ "$DOTFILES_OS" == "macos" ]]; then
+        brew_prefix="$(get_homebrew_prefix || true)"
+        if [[ -n "$brew_prefix" && -s "$brew_prefix/opt/nvm/nvm.sh" ]]; then
+            . "$brew_prefix/opt/nvm/nvm.sh"
+            return 0
+        fi
+    fi
+
+    if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+        . "$NVM_DIR/nvm.sh"
+        return 0
+    fi
+
+    return 1
+}
+
+sdkman_has_java_installation() {
+    local candidates_dir="${SDKMAN_DIR:-$HOME/.sdkman}/candidates/java"
+    local candidate=""
+
+    [[ -d "$candidates_dir" ]] || return 1
+
+    for candidate in "$candidates_dir"/*; do
+        [[ -e "$candidate" ]] || continue
+        [[ "$(basename "$candidate")" == "current" ]] && continue
+        return 0
+    done
+
+    return 1
+}
+
 log "💻 Setting up Development Environment..."
 
 # Ruby - using rbenv
@@ -157,7 +204,7 @@ setup_terraform() {
     # Install latest stable Terraform
     if command -v tfswitch &> /dev/null; then
         log "Installing latest stable Terraform..."
-        tfswitch --latest-stable
+        tfswitch --latest
         
         # Add terraform completion
         if command -v terraform &> /dev/null; then
@@ -187,11 +234,9 @@ setup_nodejs() {
         fi
         
         # Source nvm for current session
-        export NVM_DIR="$HOME/.nvm"
-        if [[ "$DOTFILES_OS" == "macos" && -d "/opt/homebrew/opt/nvm" ]]; then
-            [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
-        else
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        if ! source_nvm_for_current_session; then
+            log "⚠️  nvm installation may have failed"
+            return 1
         fi
     fi
     
@@ -211,30 +256,77 @@ setup_nodejs() {
     fi
 }
 
+# Java - using SDKMAN!
+setup_java() {
+    log "☕ Setting up Java with SDKMAN!..."
+    
+    # SDKMAN! works the same on macOS and Linux
+    if [[ ! -d "$HOME/.sdkman" ]]; then
+        log "Installing SDKMAN!..."
+        # Install SDKMAN! (works on macOS, Linux, and WSL)
+        curl -s "https://get.sdkman.io" | bash
+    else
+        log "SDKMAN! already installed"
+    fi
+    
+    # Source SDKMAN! for current session
+    export SDKMAN_DIR="$HOME/.sdkman"
+    if [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then
+        source "$SDKMAN_DIR/bin/sdkman-init.sh"
+    else
+        log "⚠️  SDKMAN! installation may have failed"
+        return 1
+    fi
+    
+    # Install latest LTS Java (Eclipse Temurin - recommended free OpenJDK)
+    if command -v sdk &> /dev/null; then
+        if ! sdkman_has_java_installation; then
+            log "Installing latest Java LTS (Eclipse Temurin)..."
+            # Install latest Temurin LTS (currently 21 is LTS)
+            sdk install java 21-tem <<< "Y" || sdk install java 21-tem
+            
+            log "✅ Java installed successfully"
+        else
+            log "✅ Java already installed via SDKMAN!"
+        fi
+        
+        # Show installed version
+        if command -v java &> /dev/null; then
+            log "Java version: $(java -version 2>&1 | head -n1)"
+        fi
+    else
+        log "⚠️  SDKMAN! sdk command not available"
+        return 1
+    fi
+}
+
 # Main setup function
 setup_languages() {
     local languages=("$@")
     
     if [[ ${#languages[@]} -eq 0 ]]; then
-        languages=("ruby" "python" "go" "terraform" "nodejs")
+        languages=("ruby" "python" "go" "java" "terraform" "nodejs")
     fi
     
     for lang in "${languages[@]}"; do
         case "$lang" in
             ruby)
-                setup_ruby
+                setup_ruby || echo "⚠️  Ruby setup encountered issues, continuing..."
                 ;;
             python)
-                setup_python
+                setup_python || echo "⚠️  Python setup encountered issues, continuing..."
                 ;;
             go)
-                setup_go
+                setup_go || echo "⚠️  Go setup encountered issues, continuing..."
+                ;;
+            java)
+                setup_java || echo "⚠️  Java setup encountered issues, continuing..."
                 ;;
             terraform)
-                setup_terraform
+                setup_terraform || echo "⚠️  Terraform setup encountered issues, continuing..."
                 ;;
             nodejs)
-                setup_nodejs
+                setup_nodejs || echo "⚠️  Node.js setup encountered issues, continuing..."
                 ;;
             *)
                 echo "⚠️  Unknown language: $lang"
@@ -247,8 +339,8 @@ setup_languages() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "🚀 Development Environment Setup"
     echo "Select languages to install:"
-    echo "1) All (Ruby, Python, Go, Terraform, Node.js)"
-    echo "2) Required only (Ruby, Python, Go, Terraform)"
+    echo "1) All (Ruby, Python, Go, Java, Terraform, Node.js)"
+    echo "2) Required only (Ruby, Python, Go, Java, Terraform)"
     echo "3) Custom selection"
     echo "4) Exit"
     
@@ -259,7 +351,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             setup_languages
             ;;
         2)
-            setup_languages "ruby" "python" "go" "terraform"
+            setup_languages "ruby" "python" "go" "java" "terraform"
             ;;
         3)
             selected_languages=()
@@ -273,6 +365,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             
             read -p "Go? [y/N]: " go_choice
             [[ "$go_choice" =~ ^[Yy]$ ]] && selected_languages+=("go")
+            
+            read -p "Java? [y/N]: " java_choice
+            [[ "$java_choice" =~ ^[Yy]$ ]] && selected_languages+=("java")
             
             read -p "Terraform? [y/N]: " terraform_choice
             [[ "$terraform_choice" =~ ^[Yy]$ ]] && selected_languages+=("terraform")
@@ -300,5 +395,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     log "Please restart your shell or run: exec zsh"
 else
     # When sourced, install required languages
-    setup_languages "ruby" "python" "go" "terraform"
+    setup_languages "ruby" "python" "go" "java" "terraform"
 fi

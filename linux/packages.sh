@@ -29,6 +29,7 @@ CLI_PACKAGES=(
     "zip"
     "ncdu"
     "procps"
+    "pandoc"
 )
 
 # Additional CLI tools (installed via other methods)
@@ -74,6 +75,7 @@ PYTHON_PACKAGES=(
 # Snap packages
 SNAP_PACKAGES=(
     "code --classic"
+    "ghostty --classic"
 )
 
 # Function to install essential packages

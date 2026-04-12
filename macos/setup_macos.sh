@@ -124,19 +124,18 @@ fi
 # Run additional setup scripts
 echo "🔧 Running additional setup scripts..."
 
-# Development environment setup
+# Development environment setup (run as subprocess to isolate set -e)
 if [[ -f "$DOTFILES_DIR/common/setup_dev_env.sh" ]]; then
     echo "💻 Running development environment setup..."
     chmod +x "$DOTFILES_DIR/common/setup_dev_env.sh"
-    source "$DOTFILES_DIR/common/setup_dev_env.sh"
+    # Run in subshell to prevent set -euo pipefail from affecting parent
+    (source "$DOTFILES_DIR/common/setup_dev_env.sh") || {
+        echo "⚠️  Development environment setup had some issues, continuing..."
+    }
 fi
 
-# Dotfiles setup (including .gitconfig generation)
-if [[ -f "$DOTFILES_DIR/common/setup_dotfiles.sh" ]]; then
-    echo "📝 Running dotfiles setup..."
-    chmod +x "$DOTFILES_DIR/common/setup_dotfiles.sh"
-    "$DOTFILES_DIR/common/setup_dotfiles.sh" install
-fi
+# Note: Dotfiles setup is handled by the main setup_mac.sh script
+# to ensure proper ordering in the overall setup workflow
 
 echo "✅ macOS setup complete!"
 echo ""

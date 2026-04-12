@@ -22,7 +22,7 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.We
 ## What Gets Installed
 
 **Version Managers:**
-- Node.js (nvm), Python (pyenv), Ruby (rbenv), Go (g), Terraform (tfswitch)
+- Node.js (nvm), Python (pyenv), Ruby (rbenv), Go (goenv), Java (SDKMAN!), Terraform (tfswitch)
 
 **Development Tools:**
 - Git, Docker/Podman, Kubernetes management (Freelens, Headlamp)
@@ -53,7 +53,8 @@ Complete package lists are in: `macos/packages.sh`, `linux/packages.sh`, `window
 nvm install 18        # Install Node.js 18
 pyenv install 3.11    # Install Python 3.11
 rbenv install 3.2     # Install Ruby 3.2
-g install 1.21        # Install Go 1.21
+goenv install 1.21    # Install Go 1.21
+sdk install java 21   # Install Java 21 (Temurin LTS)
 tfswitch             # Select Terraform version
 ```
 
@@ -331,7 +332,7 @@ source ~/.zshrc      # Reload config
 
 **Version managers not working?**
 ```bash
-echo $PATH | tr ':' '\n' | grep -E "(nvm|pyenv|rbenv)"
+echo $PATH | tr ':' '\n' | grep -E "(nvm|pyenv|rbenv|sdkman)"
 validate-version-managers
 ```
 

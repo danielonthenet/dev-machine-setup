@@ -17,6 +17,24 @@ if [[ -d "$HOME/.goenv" ]]; then
     # for automatic version switching via shims
 fi
 
+lazy_load_brew_prefix() {
+    if [[ -x "/opt/homebrew/bin/brew" ]]; then
+        echo "/opt/homebrew"
+    elif [[ -x "/usr/local/bin/brew" ]]; then
+        echo "/usr/local"
+    elif command -v brew >/dev/null 2>&1; then
+        brew --prefix 2>/dev/null
+    fi
+}
+
+find_executable_on_path() {
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        whence -p "$1" 2>/dev/null
+    else
+        type -P "$1" 2>/dev/null
+    fi
+}
+
 # Lazy load pyenv
 pyenv() {
     if [[ -d "$HOME/.pyenv" ]]; then
@@ -38,9 +56,11 @@ pyenv() {
 # Lazy load nvm
 nvm() {
     if [[ -d "$NVM_DIR" ]]; then
-        if [[ "$DOTFILES_OS" == "macos" && -d "/opt/homebrew/opt/nvm" ]]; then
-            [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
-            [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+        local brew_prefix=""
+        brew_prefix="$(lazy_load_brew_prefix)"
+        if [[ "$DOTFILES_OS" == "macos" && -n "$brew_prefix" && -d "$brew_prefix/opt/nvm" ]]; then
+            [ -s "$brew_prefix/opt/nvm/nvm.sh" ] && \. "$brew_prefix/opt/nvm/nvm.sh"
+            [ -s "$brew_prefix/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$brew_prefix/opt/nvm/etc/bash_completion.d/nvm"
         else
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
@@ -70,3 +90,37 @@ goenv() {
 }
 
 # Note: tfswitch doesn't need lazy loading as it's just a binary without heavy initialization
+
+# Lazy load SDKMAN! (Java version manager)
+sdk() {
+    if [[ -d "$HOME/.sdkman" ]]; then
+        export SDKMAN_DIR="$HOME/.sdkman"
+        [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+        unfunction sdk
+        sdk "$@"
+    else
+        echo "SDKMAN! not installed. Install with: curl -s 'https://get.sdkman.io' | bash"
+        return 1
+    fi
+}
+
+# Also lazy load java command to trigger SDKMAN! init
+java() {
+    if [[ -d "$HOME/.sdkman" ]]; then
+        export SDKMAN_DIR="$HOME/.sdkman"
+        [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+        unfunction java 2>/dev/null
+        java "$@"
+    else
+        # Preserve whatever real java is already on PATH when SDKMAN is absent.
+        local java_cmd=""
+        java_cmd="$(find_executable_on_path java || true)"
+        if [[ -n "$java_cmd" ]]; then
+            unfunction java 2>/dev/null
+            "$java_cmd" "$@"
+        else
+            echo "Java not installed. Install with: sdk install java"
+            return 1
+        fi
+    fi
+}

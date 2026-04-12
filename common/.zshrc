@@ -12,6 +12,16 @@ fi
 # Source OS detection
 source "$DOTFILES_DIR/common/detect_os.sh"
 
+dotfiles_brew_prefix() {
+    if [[ -x "/opt/homebrew/bin/brew" ]]; then
+        echo "/opt/homebrew"
+    elif [[ -x "/usr/local/bin/brew" ]]; then
+        echo "/usr/local"
+    elif command -v brew >/dev/null 2>&1; then
+        brew --prefix 2>/dev/null
+    fi
+}
+
 # Enable Powerlevel10k instant prompt
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
@@ -23,15 +33,21 @@ export ZSH="$HOME/.oh-my-zsh"
 # Theme
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
-# History configuration
+# History configuration - large but reasonable limits
 export HISTFILE="$HOME/.zsh_history"
-export HISTSIZE=100000
-export SAVEHIST=100000
-setopt HIST_IGNORE_DUPS
-setopt HIST_IGNORE_ALL_DUPS
-setopt HIST_IGNORE_SPACE
-setopt HIST_FIND_NO_DUPS
-setopt HIST_SAVE_NO_DUPS
+export HISTSIZE=500000               # Maximum events in memory (500K)
+export SAVEHIST=500000               # Maximum events in history file (500K)
+setopt APPEND_HISTORY                # Append rather than overwrite
+setopt INC_APPEND_HISTORY            # Write to history file immediately
+setopt SHARE_HISTORY                 # Share history between sessions
+setopt EXTENDED_HISTORY              # Record timestamp of command
+setopt HIST_IGNORE_DUPS              # Don't record duplicate consecutive commands
+setopt HIST_IGNORE_ALL_DUPS          # Remove older duplicate commands from history
+setopt HIST_IGNORE_SPACE             # Don't record commands starting with space
+setopt HIST_FIND_NO_DUPS             # Don't display duplicates when searching
+setopt HIST_SAVE_NO_DUPS             # Don't write duplicates to history file
+setopt HIST_REDUCE_BLANKS            # Remove superfluous blanks before recording
+setopt HIST_EXPIRE_DUPS_FIRST        # Expire duplicates first when trimming
 
 # Base plugins (common to all platforms)
 base_plugins=(
@@ -80,6 +96,8 @@ if [[ -d "$DOTFILES_OS_DIR" ]]; then
     source "$DOTFILES_OS_DIR/aliases.sh"
 fi
 
+DOTFILES_BREW_PREFIX="${_BREW_PREFIX:-$(dotfiles_brew_prefix)}"
+
 # Load third-party integrations
 [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
 [[ -f ~/.kubectl_aliases ]] && source ~/.kubectl_aliases
@@ -89,13 +107,13 @@ fi
 case "$DOTFILES_PLATFORM" in
     "macos")
         # macOS-specific integrations
-        [[ -s $(brew --prefix)/etc/autojump.sh ]] && source $(brew --prefix)/etc/autojump.sh
+        [[ -n "$DOTFILES_BREW_PREFIX" && -s "$DOTFILES_BREW_PREFIX/etc/autojump.sh" ]] && source "$DOTFILES_BREW_PREFIX/etc/autojump.sh"
         
         # NVM setup for macOS
         export NVM_DIR="$HOME/.nvm"
-        if [[ -d "/opt/homebrew/opt/nvm" ]]; then
-            [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
-            [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+        if [[ -n "$DOTFILES_BREW_PREFIX" && -d "$DOTFILES_BREW_PREFIX/opt/nvm" ]]; then
+            [ -s "$DOTFILES_BREW_PREFIX/opt/nvm/nvm.sh" ] && \. "$DOTFILES_BREW_PREFIX/opt/nvm/nvm.sh"
+            [ -s "$DOTFILES_BREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$DOTFILES_BREW_PREFIX/opt/nvm/etc/bash_completion.d/nvm"
         fi
         
         # iTerm2 integration
@@ -111,14 +129,16 @@ esac
 
 # Auto-completion
 autoload -U +X bashcompinit && bashcompinit
-command -v vault >/dev/null 2>&1 && complete -o nospace -C $(command -v vault) vault
-command -v terraform >/dev/null 2>&1 && complete -o nospace -C $(command -v terraform) terraform
+command -v vault >/dev/null 2>&1 && complete -o nospace -C "$(command -v vault)" vault
+command -v terraform >/dev/null 2>&1 && complete -o nospace -C "$(command -v terraform)" terraform
 
 # Note: Version managers are now lazy-loaded for better performance
 # They will be initialized when first used
 
 # Enable completions
-if [[ -d /usr/local/share/zsh-completions ]]; then
+if [[ -n "$DOTFILES_BREW_PREFIX" && -d "$DOTFILES_BREW_PREFIX/share/zsh-completions" ]]; then
+    fpath=("$DOTFILES_BREW_PREFIX/share/zsh-completions" $fpath)
+elif [[ -d /usr/local/share/zsh-completions ]]; then
     fpath=(/usr/local/share/zsh-completions $fpath)
 fi
 
@@ -143,3 +163,9 @@ for custom_dir in "$DOTFILES_DIR"/custom-*/; do
     fi
 done
 
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+
+[[ -d "$HOME/.antigravity/antigravity/bin" ]] && export PATH="$HOME/.antigravity/antigravity/bin:$PATH"

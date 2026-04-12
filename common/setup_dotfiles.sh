@@ -360,19 +360,19 @@ setup_development_environment() {
     dotfiles_log "🔧 Setting up development environment..."
     
     # Ask user if they want to install version managers
-    read -p "Do you want to install version managers (rbenv, pyenv, nvm)? This may take a while and requires internet connectivity. (y/N): " -n 1 -r
+    read -p "Do you want to install version managers (rbenv, pyenv, goenv, SDKMAN, nvm, tfswitch)? This may take a while. (y/N): " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         dotfiles_log "⏭️  Skipping development environment setup"
         return 0
     fi
     
-    # Run development environment setup with error handling
+    # Run development environment setup with error handling (in subshell to isolate set -e)
     if [[ -f "$DOTFILES_COMMON_DIR/setup_dev_env.sh" ]]; then
         dotfiles_log "🚀 Installing version managers and development tools..."
         chmod +x "$DOTFILES_COMMON_DIR/setup_dev_env.sh"
-        if ! source "$DOTFILES_COMMON_DIR/setup_dev_env.sh"; then
-            dotfiles_log "⚠️  Development environment setup failed, but continuing..."
+        if ! (source "$DOTFILES_COMMON_DIR/setup_dev_env.sh"); then
+            dotfiles_log "⚠️  Development environment setup had some issues, but continuing..."
         fi
     else
         dotfiles_log "⚠️  Development environment setup script not found, skipping"
@@ -391,7 +391,9 @@ run_platform_setup() {
             if [[ -f "$DOTFILES_OS_DIR/setup_macos.sh" ]]; then
                 dotfiles_log "🍎 Running macOS-specific setup..."
                 chmod +x "$DOTFILES_OS_DIR/setup_macos.sh"
-                source "$DOTFILES_OS_DIR/setup_macos.sh"
+                (source "$DOTFILES_OS_DIR/setup_macos.sh") || {
+                    dotfiles_log "⚠️  macOS setup had some issues, continuing..."
+                }
             else
                 dotfiles_log "⚠️  macOS setup script not found, skipping platform-specific setup"
             fi
@@ -400,7 +402,9 @@ run_platform_setup() {
             if [[ -f "$DOTFILES_OS_DIR/setup_linux.sh" ]]; then
                 dotfiles_log "🐧 Running Linux-specific setup..."
                 chmod +x "$DOTFILES_OS_DIR/setup_linux.sh"
-                source "$DOTFILES_OS_DIR/setup_linux.sh"
+                (source "$DOTFILES_OS_DIR/setup_linux.sh") || {
+                    dotfiles_log "⚠️  Linux setup had some issues, continuing..."
+                }
             else
                 dotfiles_log "⚠️  Linux setup script not found, skipping platform-specific setup"
             fi

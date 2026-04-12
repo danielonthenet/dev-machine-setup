@@ -19,6 +19,7 @@ export PYENV_ROOT="$HOME/.pyenv"
 export GOENV_ROOT="$HOME/.goenv"
 export GOPATH="$HOME/go"
 export NVM_DIR="$HOME/.nvm"
+export SDKMAN_DIR="$HOME/.sdkman"
 
 # Development
 export PYTHONDONTWRITEBYTECODE=1

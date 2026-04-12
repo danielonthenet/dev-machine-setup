@@ -366,7 +366,7 @@ dotfiles-health() {
     # Check version managers
     echo ""
     echo "🔧 Version Managers:"
-    local managers=("rbenv" "pyenv" "nvm" "g" "tfswitch")
+    local managers=("rbenv" "pyenv" "goenv" "sdk" "nvm" "tfswitch")
     for mgr in "${managers[@]}"; do
         if command -v "$mgr" &> /dev/null; then
             echo "✅ $mgr installed"
@@ -408,8 +408,8 @@ dotfiles-health() {
     echo "🌍 Environment Variables:"
     local env_vars=("DOTFILES_DIR" "DOTFILES_OS" "DOTFILES_PLATFORM")
     for var in "${env_vars[@]}"; do
-        if [[ -n "${!var:-}" ]]; then
-            echo "✅ $var: ${!var}"
+        if [[ -n "${(P)var:-}" ]]; then
+            echo "✅ $var: ${(P)var}"
         else
             echo "⚠️  $var: not set"
         fi

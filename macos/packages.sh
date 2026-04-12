@@ -31,6 +31,7 @@ CLI_PACKAGES=(
     "tldr"
     "gemini-cli"
     "watch"
+    "pandoc"
 )
 
 # Development tools
@@ -44,6 +45,7 @@ DEV_PACKAGES=(
     "ruby-build"
     "python@3.12"
     "pyenv"
+    "postgresql@17"
     "podman"
     "podman-compose"
     "slp/krunkit/krunkit"
@@ -67,15 +69,17 @@ NPM_PACKAGES=(
     "reveal-md"
 )
 
-# Python Packages (installed via pip)
+# Python Packages (installed via pipx — isolated, globally available)
 PYTHON_PACKAGES=(
     "yamale"
+    "confluence-markdown-exporter"  # Confluence → Markdown incremental sync (cme CLI)
 )
 
 # Essential GUI Applications
 ESSENTIAL_CASK_APPS=(
     "visual-studio-code"
     "iterm2"
+    "ghostty"
     "podman-desktop"
     "google-chrome"
     "firefox"
@@ -85,6 +89,7 @@ ESSENTIAL_CASK_APPS=(
     "google-drive"
     "itsycal"
     "raycast"
+    "shottr"
 )
 
 # Development GUI Applications
@@ -97,6 +102,7 @@ DEV_CASK_APPS=(
     "git-credential-manager"
     "leapp"
     "openlens"
+    "prince"
 )
 
 # Communication & Productivity Applications
@@ -123,6 +129,17 @@ FONTS=(
     "font-jetbrains-mono-nerd-font"
     "font-source-code-pro"
 )
+
+python_package_command() {
+    case "$1" in
+        "confluence-markdown-exporter")
+            echo "cme"
+            ;;
+        *)
+            echo "$1"
+            ;;
+    esac
+}
 
 # Function to install NPM global packages
 install_npm_packages() {
@@ -156,7 +173,10 @@ install_python_packages() {
     
     # Install packages using pipx (isolated environments, globally available)
     for package in "${PYTHON_PACKAGES[@]}"; do
-        if ! command -v "$package" >/dev/null 2>&1; then
+        local package_command=""
+        package_command="$(python_package_command "$package")"
+
+        if ! command -v "$package_command" >/dev/null 2>&1; then
             echo "Installing $package..."
             pipx install "$package"
         else
@@ -387,6 +407,16 @@ install_dev_apps() {
             echo "✅ $app already installed"
         fi
     done
+
+    # Install gke-gcloud-auth-plugin now that gcloud-cli is installed
+    if command -v gcloud >/dev/null 2>&1; then
+        if ! gcloud components list --filter="id:gke-gcloud-auth-plugin" --format="value(state.name)" 2>/dev/null | grep -q "Installed"; then
+            echo "Installing gke-gcloud-auth-plugin..."
+            gcloud components install gke-gcloud-auth-plugin --quiet
+        else
+            echo "✅ gke-gcloud-auth-plugin already installed"
+        fi
+    fi
 }
 
 # Function to install communication applications
