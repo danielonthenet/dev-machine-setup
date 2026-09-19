@@ -353,6 +353,87 @@ setup_claude_hooks() {
 }
 
 # =============================================================================
+# Agent Skills Setup
+# =============================================================================
+#
+# Skills follow the open Agent Skills standard (https://agentskills.io), a
+# directory with a SKILL.md that works across AI coding tools. Codex CLI and
+# Gemini CLI read the canonical ~/.agents/skills/ location natively. Claude
+# Code does not (as of writing it only reads ~/.claude/skills/, see
+# https://github.com/anthropics/claude-code/issues/31005), so skills are
+# mirrored there via symlink.
+#
+# This keeps ~/.agents/skills/ as the single source of truth: any real skill
+# directory found under a tool-specific skills folder gets moved there once,
+# then replaced with a symlink back. Re-running is a no-op once migrated.
+
+setup_agent_skills() {
+    local agents_skills_dir="$HOME/.agents/skills"
+    local claude_skills_dir="$HOME/.claude/skills"
+    local codex_skills_dir="$HOME/.codex/skills"
+
+    dotfiles_log "🔗 Reconciling Agent Skills into $agents_skills_dir..."
+    mkdir -p "$agents_skills_dir"
+
+    # Move any real (non-symlink) skill directory under $1 into the canonical
+    # store, then symlink it back. Never overwrites a canonical skill that
+    # already exists under a different, possibly diverged, copy.
+    _migrate_skills_into_canonical() {
+        local source_dir="$1"
+        local source_label="$2"
+        [[ -d "$source_dir" ]] || return 0
+
+        local entry name canonical_target
+        for entry in "$source_dir"/*/; do
+            [[ -e "$entry" ]] || continue
+            entry="${entry%/}"
+            [[ -L "$entry" ]] && continue  # already migrated
+            name="$(basename "$entry")"
+            canonical_target="$agents_skills_dir/$name"
+
+            if [[ -e "$canonical_target" ]]; then
+                dotfiles_log "⚠️  Skipping $source_label/$name: '$name' already exists in $agents_skills_dir (diff and merge manually)"
+                continue
+            fi
+
+            mv "$entry" "$canonical_target"
+            ln -s "$canonical_target/" "$entry"
+            dotfiles_log "✅ Migrated $source_label/$name -> $agents_skills_dir/$name (symlinked back)"
+        done
+    }
+
+    # .system under ~/.codex/skills holds Codex's own bundled skills, not user
+    # skills; the */ glob above skips it since it's a dotfile.
+    _migrate_skills_into_canonical "$claude_skills_dir" "~/.claude/skills"
+    _migrate_skills_into_canonical "$codex_skills_dir" "~/.codex/skills"
+
+    # Claude Code needs an explicit symlink per skill since it doesn't read
+    # ~/.agents/skills/ directly.
+    mkdir -p "$claude_skills_dir"
+    local entry name link_target
+    for entry in "$agents_skills_dir"/*/; do
+        [[ -e "$entry" ]] || continue
+        entry="${entry%/}"
+        name="$(basename "$entry")"
+        link_target="$claude_skills_dir/$name"
+
+        if [[ -L "$link_target" ]]; then
+            continue
+        elif [[ -e "$link_target" ]]; then
+            dotfiles_log "⚠️  Skipping Claude link for $name: $link_target exists and isn't a symlink (diff and merge manually)"
+            continue
+        fi
+
+        ln -s "$entry/" "$link_target"
+        dotfiles_log "✅ Linked $link_target -> $entry"
+    done
+
+    unset -f _migrate_skills_into_canonical
+
+    dotfiles_log "✅ Agent Skills reconciled (canonical store: $agents_skills_dir)"
+}
+
+# =============================================================================
 # Development Environment Setup
 # =============================================================================
 
@@ -489,6 +570,7 @@ install_dotfiles() {
     create_symlinks
     setup_development_environment
     setup_claude_hooks
+    setup_agent_skills
 
     # Generate ~/.gitconfig from platform-specific template
     generate_gitconfig
@@ -530,6 +612,10 @@ main() {
             setup_dotfiles_environment
             backup_existing_files
             ;;
+        "skills")
+            setup_dotfiles_environment
+            setup_agent_skills
+            ;;
         "--help"|"-h"|"help")
             show_help
             ;;
@@ -549,15 +635,17 @@ Usage: $0 [COMMAND]
 
 Commands:
     install     Install dotfiles (default if no command specified)
-    validate    Validate existing dotfiles installation  
+    validate    Validate existing dotfiles installation
     backup      Backup existing configuration files
+    skills      Reconcile Agent Skills into ~/.agents/skills/ (Claude/Codex/Gemini)
     help        Show this help message
 
 Examples:
     $0                    # Install dotfiles
-    $0 install           # Install dotfiles  
+    $0 install           # Install dotfiles
     $0 validate          # Validate installation
     $0 backup            # Backup existing files
+    $0 skills            # Reconcile Agent Skills across tools
 
 This script can also be sourced to use individual functions:
     source $0 && install_dotfiles
@@ -584,6 +672,7 @@ export -f check_dotfiles_prerequisites
 export -f backup_existing_files
 export -f create_symlinks
 export -f setup_development_environment
+export -f setup_agent_skills
 export -f run_platform_setup
 export -f validate_dotfiles
 export -f install_dotfiles

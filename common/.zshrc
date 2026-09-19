@@ -163,6 +163,8 @@ for custom_dir in "$DOTFILES_DIR"/custom-*/; do
     fi
 done
 
+# Disable mouse in Claude Code
+export CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
