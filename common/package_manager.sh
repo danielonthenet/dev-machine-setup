@@ -152,7 +152,7 @@ install_productivity_apps() {
         "visual-studio-code"
         "jetbrains-toolbox"
         "iterm2"
-        "postman"
+        "bruno"
         "insomnia"
         "dbeaver-community"
         "sequel-pro"

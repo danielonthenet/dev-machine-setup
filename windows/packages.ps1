@@ -50,7 +50,7 @@ $WINGET_DEV = @(
     "Python.Python.3.12",
     "GoLang.Go",
     "RedHat.Podman-Desktop",
-    "Postman.Postman",
+    "Bruno.Bruno",
     "GitHub.GitHubDesktop",
     "PuTTY.PuTTY",
     "Microsoft.OpenSSH.Beta",

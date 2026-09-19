@@ -32,6 +32,7 @@ CLI_PACKAGES=(
     "gemini-cli"
     "watch"
     "pandoc"
+    "rclone"
 )
 
 # Development tools
@@ -95,7 +96,7 @@ ESSENTIAL_CASK_APPS=(
 # Development GUI Applications
 DEV_CASK_APPS=(
     "gcloud-cli"
-    "postman"
+    "bruno"
     "dbeaver-community"
     "github"
     "wireshark"
