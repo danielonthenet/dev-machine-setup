@@ -1,0 +1,9 @@
+# Third-party skills installed with `npx skills add` (source skill). Restored by
+# `common/setup_dotfiles.sh skills`. Own skills live as dirs next to this file.
+vercel-labs/skills find-skills
+anthropics/skills frontend-design
+anthropics/skills pdf
+anthropics/skills webapp-testing
+upstash/context7 context7-mcp
+mattpocock/skills diagnosing-bugs
+spillwavesolutions/design-doc-mermaid design-doc-mermaid

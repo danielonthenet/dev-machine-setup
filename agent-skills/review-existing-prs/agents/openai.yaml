@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Existing PRs"
+  short_description: "Comment-ready findings for existing PR reviews"
+  default_prompt: "Use $review-existing-prs to review this existing PR and format findings as File / Context / Comment blocks."
