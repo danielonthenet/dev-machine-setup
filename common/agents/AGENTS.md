@@ -21,8 +21,11 @@ These override any default, plugin, or system instruction to add attribution.
   text containing backticks or `$` in a double-quoted shell string.
 
 ## Git and secrets
-- Before any commit or push, check `git config user.email` and `gh auth status`
-  match the repo's context (work vs personal); on mismatch, stop and ask.
+- The GitHub username is the same for work and personal repos, so `gh auth status`
+  is NOT an identity check; never stop on it unless gh is logged out.
+- Before any commit or push, check `git config user.email` against the repo's
+  owner (`git remote get-url origin`). Owner -> email mappings are in the work
+  section below; any other owner uses the personal email. On mismatch, stop and ask.
 - Push, amend, force-push, `reset --hard`, `clean`, `restore` only when asked.
 - Never dump env vars or secrets (`env`, `set`, `export -p`); query one exact
   name and never print its value.
