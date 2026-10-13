@@ -136,3 +136,6 @@ alias claude-list='claude_list_profiles'
 alias claude-switch='claude_switch_to'
 alias claude-delete='claude_delete_profile'
 alias claude-status='claude_show_status'
+
+# Summarise Claude Code sessions per day (for weekly notes): claude-sessions --since 2026-10-05 --until 2026-10-09
+alias claude-sessions='python3 "$DOTFILES_DIR/common/claude_sessions_summary.py"'
